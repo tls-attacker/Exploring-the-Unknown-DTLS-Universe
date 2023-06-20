@@ -25,5 +25,4 @@ RUN apk update &&\
     build-base \
     bsd-compat-headers
 
-# COPY ./ca.pem /etc/ssl/certs/
 WORKDIR /src/
