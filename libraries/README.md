@@ -1,4 +1,4 @@
-### Building the server implementations
+### Building the Server Implementations
 
 ---
 
