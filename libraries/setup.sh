@@ -1,8 +1,8 @@
 #!/bin/bash
 
 echo "### Building: Base Images ### "
-docker build --build-arg VERSION=3.6 --tag test-alpine-build:3.6 --file dockerfile-alpine .
-docker build --build-arg VERSION=3.12 --tag test-alpine-build:3.12 --file dockerfile-alpine .
+docker build --build-arg VERSION=3.6 --tag alpine-build:3.6 --file dockerfile-alpine .
+docker build --build-arg VERSION=3.12 --tag alpine-build:3.12 --file dockerfile-alpine .
 
 # Using alpine-build:3.6
 echo "### Building: LibreSSL ###"
