@@ -1,0 +1,27 @@
+--- a/src/cli/tls_helpers.h
++++ b/src/cli/tls_helpers.h
+@@ -139,6 +145,24 @@ class Basic_Credentials_Manager : public Botan::Credentials_Manager
+ 
+          return nullptr;
+          }
++         
++      Botan::SymmetricKey psk(const std::string& type,
++                                       const std::string& context,
++                                       const std::string&) override
++         {
++
++            if(type == "tls-server" && context == "dtls-cookie-secret")
++               {
++               printf("dtls-cookie-secret used\n");
++               return Botan::SymmetricKey("4AEA5EAD279CADEB537A594DA0E9DE3A");
++               }
++            else 
++               {
++               printf("some other key needed...\n");
++               return Botan::SymmetricKey("4AEA5EAD279CADEB537A594DA0E9DE3B");
++               }
++
++         }
+ 
+    private:
+       struct Certificate_Info
