@@ -1,0 +1,19 @@
+FROM alpine-build:3.12 as tinydtls-e-base1
+ARG VERSION=98e2cd7
+RUN git clone https://github.com/eclipse/tinydtls.git
+WORKDIR tinydtls
+RUN git checkout ${VERSION}
+RUN ./autogen.sh
+RUN ./configure
+RUN make
+
+FROM entrypoint as tinydtls-e-base2
+COPY --from=tinydtls-e-base1 /lib/ld-musl-x86_64.so.* /lib/
+
+FROM tinydtls-e-base2 as tinydtls-e-server
+ARG VERSION=98e2cd7
+LABEL "tls_implementation"="tinydtlc-e"
+LABEL "tls_implementation_version"="${VERSION}"
+LABEL "tls_implementation_connectionRole"="server"
+COPY --from=tinydtls-e-base1 /src/tinydtls/tests/dtls-server bin/
+ENTRYPOINT ["server-entrypoint", "dtls-server"]
