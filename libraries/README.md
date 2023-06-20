@@ -9,26 +9,15 @@ bash setup.sh
 
 To launch a server, you can use the following commands:
 
-Botan - ```TODO```
+- Mbed TLS
+```bash
+docker run --rm -p 4433:4433/udp --name mbedtls-dtls-server mbedtls-dtls-server server_port=4433 dtls=1
+```
 
-GnuTLS - ```TODO```
+- TinyDTLS (Eclipse)
+```bash
+docker run --rm -p 4433:4433/udp --name tinydtls-e-dtls-server tinydtls-e-dtls-server -p 4433
+```
 
-JSSE - ```TODO```
-
-LibreSSL - ```TODO```
-
-MatrixSSL - ```TODO```
-
-Mbed TLS - ```TODO```
-
-OpenSSL - ```TODO```
-
-PionDTLS - ```TODO```
-
-Scandium - ```TODO```
-
-TinyDTLS (Contiki-NG) - ```TODO```
-
-TinyDTLS (Eclipse) - ```TODO```
-
-wolfSSL - ```TODO```
+We are currently working on additional Docker files for the following server implementations, which we will soon make available: 
+Botan, GnuTLS, JSSE, LibreSSL, MatrixSSL, OpenSSL, PionDTLS, Scandium, TinyDTLS (Contiki-NG), and wolfSSL.
