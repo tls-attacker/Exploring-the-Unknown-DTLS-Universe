@@ -6,4 +6,4 @@ Artifact for the USENIX 2023 publication. The full paper can be found [here](htt
 
 Structure:
 - **libraries**: Docker files to build the open-source DTLS server implementations
-- **tls-scanner**: Source code of the extended TLS-Scanner
+- **tls-scanner**: Source code of TLS-Scanner and its dependency TLS-Attacker
