@@ -1,60 +1,93 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.workflow.action;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.CipherSuite;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
 import de.rub.nds.tlsattacker.core.protocol.message.ClientHelloMessage;
 import de.rub.nds.tlsattacker.core.protocol.preparator.ClientHelloPreparator;
-import de.rub.nds.tlsattacker.util.tests.TestCategories;
+import de.rub.nds.tlsattacker.core.state.State;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import de.rub.nds.tlsattacker.core.workflow.WorkflowTrace;
+import de.rub.nds.tlsattacker.util.tests.SlowTests;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import javax.crypto.NoSuchPaddingException;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-public class RemBufferedChCiphersActionTest extends AbstractActionTest<RemBufferedChCiphersAction> {
+public class RemBufferedChCiphersActionTest {
 
-    private final ClientHelloMessage ch;
-    private final List<CipherSuite> remove;
-    private final List<CipherSuite> expected;
+    private State state;
+    private TlsContext ctx;
+    private WorkflowTrace trace;
+
+    private ClientHelloMessage ch;
+    private ClientHelloPreparator preparator;
+    private RemBufferedChCiphersAction action;
+    private List<CipherSuite> remove;
+    private List<CipherSuite> expected;
+    private List<CipherSuite> actual;
     private byte[] expectedBytes;
     private int expectedLength;
     private int expectedMsgLength;
+    private byte[] actualBytes;
+    private int actualLength;
+    private int actualMsgLength;
 
-    RemBufferedChCiphersActionTest() {
-        super(new RemBufferedChCiphersAction(), RemBufferedChCiphersAction.class);
-        expected = new ArrayList<>();
+    public RemBufferedChCiphersActionTest() {
+    }
+
+    @Before
+    public void setUp() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+        InvalidAlgorithmParameterException {
+
+        expected = new ArrayList();
         expected.add(CipherSuite.TLS_AES_128_CCM_SHA256);
         expected.add(CipherSuite.TLS_AES_256_GCM_SHA384);
         expected.add(CipherSuite.SSL_FORTEZZA_KEA_WITH_NULL_SHA);
         expected.add(CipherSuite.TLS_PSK_WITH_RC4_128_SHA);
         expectedBytes = ArrayConverter.hexStringToByteArray("13041302001C008A");
         expectedLength = 8;
-        TlsContext context = state.getTlsContext();
-        context.getConfig().setDefaultClientSupportedCipherSuites(expected);
+
+        Config config = Config.createConfig();
+        config.setDefaultClientSupportedCipherSuites(expected);
+
+        action = new RemBufferedChCiphersAction();
+        trace = new WorkflowTrace();
+        trace.addTlsAction(action);
+        state = new State(config, trace);
+        ctx = state.getTlsContext();
         ch = new ClientHelloMessage(config);
-        new ClientHelloPreparator(context.getChooser(), ch).prepare();
+        preparator = new ClientHelloPreparator(ctx.getChooser(), ch);
+        preparator.prepare();
         expectedMsgLength = ch.getLength().getValue();
-        context.getMessageBuffer().add(ch);
+        ctx.getMessageBuffer().add(ch);
         remove = new ArrayList<>();
     }
 
     private void compareFields() {
-        byte[] actualBytes = ch.getCipherSuites().getValue();
-        int actualLength = ch.getCipherSuiteLength().getValue();
-        int actualMsgLength = ch.getLength().getValue();
-        assertArrayEquals(expectedBytes, actualBytes, "bytes should be adjusted");
-        assertEquals(expectedLength, actualLength, "bytes lengths should be adjusted");
-        assertEquals(expectedMsgLength, actualMsgLength, "message lengths should be adjusted");
+        actualBytes = ch.getCipherSuites().getValue();
+        actualLength = ch.getCipherSuiteLength().getValue();
+        actualMsgLength = ch.getLength().getValue();
+        assertThat("bytes should be adjusted", actualBytes, equalTo(expectedBytes));
+        assertThat("bytes lengths should be adjusted", actualLength, equalTo(expectedLength));
+        assertThat("message lengths should be adjusted", actualMsgLength, equalTo(expectedMsgLength));
         assertTrue(action.isExecuted());
     }
 
@@ -67,50 +100,71 @@ public class RemBufferedChCiphersActionTest extends AbstractActionTest<RemBuffer
     }
 
     @Test
-    @Override
-    public void testExecute() throws Exception {
-        super.testExecute();
+    public void removingNothingIsOk() {
+        action.execute(state);
+
+        assertTrue(action.isExecuted());
         compareFields();
     }
 
     @Test
-    public void testRemoveSingleCipherIsOk() throws Exception {
+    public void removingSingleExtensionIsOk() {
         expected.remove(CipherSuite.TLS_AES_256_GCM_SHA384);
         setExpectedFields("1304001C008A");
+
         action.setRemoveCiphers(CipherSuite.TLS_AES_256_GCM_SHA384);
-        super.testExecute();
+        action.execute(state);
+
+        assertTrue(action.isExecuted());
         compareFields();
     }
 
     @Test
-    public void testRemoveMultipleCiphersIsOk() throws Exception {
+    public void removingMultipleExtensionsIsOk() {
         remove.add(CipherSuite.TLS_AES_128_CCM_SHA256);
         remove.add(CipherSuite.SSL_FORTEZZA_KEA_WITH_NULL_SHA);
         expected.removeAll(remove);
         setExpectedFields("1302008A");
+
         action.setRemoveCiphers(remove);
-        super.testExecute();
+        action.execute(state);
+
+        assertTrue(action.isExecuted());
         compareFields();
     }
 
     @Test
-    public void testRemoveNonProposedCiphersIsOk() throws Exception {
+    public void removingNonProposedExtensionsIsOk() {
         remove.add(CipherSuite.TLS_CHACHA20_POLY1305_SHA256);
         remove.add(CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
         remove.add(CipherSuite.TLS_AES_256_GCM_SHA384);
         expected.removeAll(remove);
         setExpectedFields("1304001C008A");
+
         action.setRemoveCiphers(remove);
-        super.testExecute();
+        action.execute(state);
+
+        assertTrue(action.isExecuted());
         compareFields();
     }
 
     @Test
-    @Tag(TestCategories.SLOW_TEST)
-    @Override
-    public void testMarshalingAndUnmarshalingFilledObjectYieldsEqualObject() {
-        action.setRemoveCiphers(
-                CipherSuite.TLS_AES_128_CCM_SHA256, CipherSuite.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        super.testMarshalingAndUnmarshalingFilledObjectYieldsEqualObject();
+    @Category(SlowTests.class)
+    public void marshalingEmptyActionYieldsMinimalOutput() {
+        ActionTestUtils.marshalingEmptyActionYieldsMinimalOutput(RemBufferedChCiphersAction.class);
     }
+
+    @Test
+    @Category(SlowTests.class)
+    public void marshalingAndUnmarshalingEmptyObjectYieldsEqualObject() {
+        ActionTestUtils.marshalingAndUnmarshalingEmptyObjectYieldsEqualObject(RemBufferedChCiphersAction.class);
+    }
+
+    @Test
+    @Category(SlowTests.class)
+    public void marshalingAndUnmarshalingFilledObjectYieldsEqualObject() {
+        action.setRemoveCiphers(CipherSuite.TLS_AES_128_CCM_SHA256, CipherSuite.TLS_DH_anon_WITH_SEED_CBC_SHA);
+        ActionTestUtils.marshalingAndUnmarshalingFilledObjectYieldsEqualObject(action);
+    }
+
 }

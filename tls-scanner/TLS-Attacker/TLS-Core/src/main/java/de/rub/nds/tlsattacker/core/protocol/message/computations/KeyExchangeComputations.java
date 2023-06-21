@@ -1,23 +1,24 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message.computations;
 
 import de.rub.nds.modifiablevariable.ModifiableVariableFactory;
 import de.rub.nds.modifiablevariable.ModifiableVariableProperty;
 import de.rub.nds.modifiablevariable.biginteger.ModifiableBigInteger;
 import de.rub.nds.modifiablevariable.bytearray.ModifiableByteArray;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.protocol.ModifiableVariableHolder;
 import java.io.Serializable;
 import java.math.BigInteger;
 
-public abstract class KeyExchangeComputations extends ModifiableVariableHolder
-        implements Serializable {
+public abstract class KeyExchangeComputations extends ModifiableVariableHolder implements Serializable {
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.KEY_MATERIAL)
     protected ModifiableByteArray premasterSecret;
@@ -37,8 +38,7 @@ public abstract class KeyExchangeComputations extends ModifiableVariableHolder
     }
 
     public void setPremasterSecret(byte[] premasterSecret) {
-        this.premasterSecret =
-                ModifiableVariableFactory.safelySetValue(this.premasterSecret, premasterSecret);
+        this.premasterSecret = ModifiableVariableFactory.safelySetValue(this.premasterSecret, premasterSecret);
     }
 
     public ModifiableByteArray getClientServerRandom() {
@@ -50,8 +50,7 @@ public abstract class KeyExchangeComputations extends ModifiableVariableHolder
     }
 
     public void setClientServerRandom(byte[] random) {
-        this.clientServerRandom =
-                ModifiableVariableFactory.safelySetValue(this.clientServerRandom, random);
+        this.clientServerRandom = ModifiableVariableFactory.safelySetValue(this.clientServerRandom, random);
     }
 
     public ModifiableBigInteger getPrivateKey() {

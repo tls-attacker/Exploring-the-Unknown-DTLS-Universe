@@ -1,60 +1,82 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.config.delegate;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import de.rub.nds.tlsattacker.core.config.Config;
+import de.rub.nds.tlsattacker.core.connection.AliasedConnection;
 import de.rub.nds.tlsattacker.core.connection.OutboundConnection;
 import de.rub.nds.tlsattacker.transport.ConnectionEndType;
-import de.rub.nds.tlsattacker.util.tests.TestCategories;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import de.rub.nds.tlsattacker.util.tests.IntegrationTests;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 
-public class ClientDelegateTest extends AbstractDelegateTest<ClientDelegate> {
+public class ClientDelegateTest {
 
-    @BeforeEach
+    private final Logger LOGGER = LogManager.getLogger();
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    private ClientDelegate delegate;
+    private JCommander jcommander;
+    private String[] args;
+
+    @Before
     public void setUp() {
-        super.setUp(new ClientDelegate());
+        delegate = new ClientDelegate();
+        jcommander = new JCommander(delegate);
     }
 
-    /** Test of getHost method, of class ClientDelegate. */
+    /**
+     * Test of getHost method, of class ClientDelegate.
+     */
     @Test
     public void testGetHost() {
         args = new String[2];
         args[0] = "-connect";
         args[1] = "127.0.1.1";
-        assertNull(delegate.getHost());
+        assertTrue(delegate.getHost() == null);
         jcommander.parse(args);
-        assertEquals("127.0.1.1", delegate.getHost());
+        assertTrue(delegate.getHost().equals("127.0.1.1"));
     }
 
-    /** Test of setHost method, of class ClientDelegate. */
+    /**
+     * Test of setHost method, of class ClientDelegate.
+     */
     @Test
     public void testSetHost() {
-        assertNull(delegate.getHost());
+        assertTrue(delegate.getHost() == null);
         delegate.setHost("123456");
-        assertEquals("123456", delegate.getHost());
+        assertTrue(delegate.getHost().equals("123456"));
     }
 
     @Test
     public void testApplyDelegateNullHost() {
         Config config = Config.createConfig();
-        ParameterException exception =
-                assertThrows(ParameterException.class, () -> delegate.applyDelegate(config));
-        assertEquals("Could not parse provided host: null", exception.getMessage());
+        exception.expect(ParameterException.class);
+        exception.expectMessage("Could not parse provided host: null");
+        delegate.applyDelegate(config);
     }
 
     @Test
@@ -67,83 +89,86 @@ public class ClientDelegateTest extends AbstractDelegateTest<ClientDelegate> {
         OutboundConnection actual = config.getDefaultClientConnection();
         assertNotNull(actual);
         // This should pass without ConfigurationException, too.
-        assertEquals(expectedHostname, actual.getHostname());
+        assertThat(actual.getHostname(), equalTo(expectedHostname));
     }
 
-    /**
-     * Provides test vectors with localhost as host for {@link #testHostIsAsExpected(String, String,
-     * int)} in the format of (providedUrl, expectedHost, expectedPort).
-     */
-    public static Stream<Arguments> provideHostTestVectorsWithLocalhost() {
-        return Stream.of(
-                Arguments.of("localhost", "localhost", 443),
-                Arguments.of("localhost:123", "localhost", 123),
-                Arguments.of("localhost:123/", "localhost", 123),
-                Arguments.of("localhost:123/test.php", "localhost", 123),
-                Arguments.of("localhost:123/test.php?a=b", "localhost", 123),
-                Arguments.of("localhost:123/test.php?a=b#", "localhost", 123),
-                Arguments.of("http://localhost", "localhost", 443),
-                Arguments.of("http://localhost:123", "localhost", 123),
-                Arguments.of("http://localhost:123/", "localhost", 123),
-                Arguments.of("http://localhost:123/test.php", "localhost", 123),
-                Arguments.of("http://localhost:123/test.php?a=b", "localhost", 123),
-                Arguments.of("http://localhost:123/test.php?a=b#", "localhost", 123),
-                Arguments.of("https://localhost", "localhost", 443),
-                Arguments.of("https://localhost:123", "localhost", 123),
-                Arguments.of("https://localhost:123/", "localhost", 123),
-                Arguments.of("https://localhost:123/test.php", "localhost", 123),
-                Arguments.of("https://localhost:123/test.php?a=b", "localhost", 123),
-                Arguments.of("https://localhost:123/test.php?a=b#", "localhost", 123));
+    @Test
+    public void bulkTest() throws UnknownHostException {
+        checkHostIsAsExpected("localhost", InetAddress.getByName("localhost").getHostName(), 443);
+        checkHostIsAsExpected("localhost:123", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("localhost:123/", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("localhost:123/test.php", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("localhost:123/test.php?a=b", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("localhost:123/test.php?a=b#", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("http://localhost", InetAddress.getByName("localhost").getHostName(), 443);
+        checkHostIsAsExpected("http://localhost:123", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("http://localhost:123/", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("http://localhost:123/test.php", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("http://localhost:123/test.php?a=b", InetAddress.getByName("localhost").getHostName(),
+            123);
+        checkHostIsAsExpected("http://localhost:123/test.php?a=b#", InetAddress.getByName("localhost").getHostName(),
+            123);
+        checkHostIsAsExpected("https://localhost", InetAddress.getByName("localhost").getHostName(), 443);
+        checkHostIsAsExpected("https://localhost:123", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("https://localhost:123/", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("https://localhost:123/test.php", InetAddress.getByName("localhost").getHostName(), 123);
+        checkHostIsAsExpected("https://localhost:123/test.php?a=b", InetAddress.getByName("localhost").getHostName(),
+            123);
+        checkHostIsAsExpected("https://localhost:123/test.php?a=b#", InetAddress.getByName("localhost").getHostName(),
+            123);
     }
 
-    /**
-     * Provides test vectors with DNS hostname as host for {@link
-     * #testHostIsAsExpectedWithDns(String, String, int)} in the format of (providedUrl,
-     * expectedHost, expectedPort).
-     */
-    public static Stream<Arguments> provideHostTestVectorsWithDns() {
-        return Stream.of(
-                Arguments.of("hackmanit.de", "hackmanit.de", 443),
-                Arguments.of("hackmanit.de:123", "hackmanit.de", 123),
-                Arguments.of("hackmanit.de:123/", "hackmanit.de", 123),
-                Arguments.of("hackmanit.de:123/test.php", "hackmanit.de", 123),
-                Arguments.of("hackmanit.de:123/test.php?a=b", "hackmanit.de", 123),
-                Arguments.of("hackmanit.de:123/test.php?a=b#", "hackmanit.de", 123),
-                Arguments.of("http://hackmanit.de", "hackmanit.de", 443),
-                Arguments.of("http://hackmanit.de:123", "hackmanit.de", 123),
-                Arguments.of("http://hackmanit.de:123/", "hackmanit.de", 123),
-                Arguments.of("http://hackmanit.de:123/test.php", "hackmanit.de", 123),
-                Arguments.of("http://hackmanit.de:123/test.php?a=b", "hackmanit.de", 123),
-                Arguments.of("http://hackmanit.de:123/test.php?a=b#", "hackmanit.de", 123),
-                Arguments.of("https://hackmanit.de", "hackmanit.de", 443),
-                Arguments.of("https://hackmanit.de:123", "hackmanit.de", 123),
-                Arguments.of("https://hackmanit.de:123/", "hackmanit.de", 123),
-                Arguments.of("https://hackmanit.de:123/test.php", "hackmanit.de", 123),
-                Arguments.of("https://hackmanit.de:123/test.php?a=b", "hackmanit.de", 123),
-                Arguments.of("https://hackmanit.de:123/test.php?a=b#", "hackmanit.de", 123));
+    @Test
+    @Ignore("No good testcase available atm")
+    public void reverseDnsTest() {
+        try {
+            InetAddress address = InetAddress.getByName("hackmanit.de");
+            checkHostIsAsExpected(address.getHostAddress(), "hackmanit.de", 443);
+        } catch (UnknownHostException ex) {
+            LOGGER.error("Could not perform reverse dns test. This can happen if you try to build offline", ex);
+        }
     }
 
-    @ParameterizedTest
-    @MethodSource("provideHostTestVectorsWithLocalhost")
-    public void testHostIsAsExpected(String providedUrl, String expectedHost, int expectedPort) {
-        assertHostIsAsExpected(providedUrl, expectedHost, expectedPort);
+    @Test
+    @Category(IntegrationTests.class)
+    public void testDnsDelegate() throws UnknownHostException {
+        checkHostIsAsExpected("hackmanit.de", InetAddress.getByName("hackmanit.de").getHostName(), 443);
+        checkHostIsAsExpected("hackmanit.de:123", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("hackmanit.de:123/", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("hackmanit.de:123/test.php", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("hackmanit.de:123/test.php?a=b", InetAddress.getByName("hackmanit.de").getHostName(),
+            123);
+        checkHostIsAsExpected("hackmanit.de:123/test.php?a=b#", InetAddress.getByName("hackmanit.de").getHostName(),
+            123);
+        checkHostIsAsExpected("http://hackmanit.de", InetAddress.getByName("hackmanit.de").getHostName(), 443);
+        checkHostIsAsExpected("http://hackmanit.de:123", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("http://hackmanit.de:123/", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("http://hackmanit.de:123/test.php", InetAddress.getByName("hackmanit.de").getHostName(),
+            123);
+        checkHostIsAsExpected("http://hackmanit.de:123/test.php?a=b",
+            InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("http://hackmanit.de:123/test.php?a=b#",
+            InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("https://hackmanit.de", InetAddress.getByName("hackmanit.de").getHostName(), 443);
+        checkHostIsAsExpected("https://hackmanit.de:123", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("https://hackmanit.de:123/", InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("https://hackmanit.de:123/test.php", InetAddress.getByName("hackmanit.de").getHostName(),
+            123);
+        checkHostIsAsExpected("https://hackmanit.de:123/test.php?a=b",
+            InetAddress.getByName("hackmanit.de").getHostName(), 123);
+        checkHostIsAsExpected("https://hackmanit.de:123/test.php?a=b#",
+            InetAddress.getByName("hackmanit.de").getHostName(), 123);
+
     }
 
-    @ParameterizedTest
-    @MethodSource("provideHostTestVectorsWithDns")
-    @Tag(TestCategories.INTEGRATION_TEST)
-    public void testHostIsAsExpectedWithDns(
-            String providedUrl, String expectedHost, int expectedPort) {
-        assertHostIsAsExpected(providedUrl, expectedHost, expectedPort);
-    }
-
-    private void assertHostIsAsExpected(String providedUrl, String expectedHost, int expectedPort) {
-        delegate.setHost(providedUrl);
+    private void checkHostIsAsExpected(String fullHost, String host, int port) {
+        delegate.setHost(fullHost);
         Config config = Config.createConfig();
         delegate.applyDelegate(config);
         OutboundConnection defaultClientConnection = config.getDefaultClientConnection();
-        assertEquals(expectedHost, defaultClientConnection.getHostname());
-        assertEquals(expectedPort, defaultClientConnection.getPort().intValue());
-        assertSame(ConnectionEndType.CLIENT, defaultClientConnection.getLocalConnectionEndType());
+        assertThat(defaultClientConnection.getHostname(), equalTo(host));
+        assertThat(defaultClientConnection.getPort(), equalTo(port));
+        assertThat(defaultClientConnection.getLocalConnectionEndType(), equalTo(ConnectionEndType.CLIENT));
+
     }
 }

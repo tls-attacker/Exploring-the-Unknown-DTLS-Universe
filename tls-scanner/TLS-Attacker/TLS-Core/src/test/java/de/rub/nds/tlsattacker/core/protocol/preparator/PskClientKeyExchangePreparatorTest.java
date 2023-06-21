@@ -1,37 +1,43 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.protocol.preparator;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+package de.rub.nds.tlsattacker.core.protocol.preparator;
 
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.tlsattacker.core.constants.CipherSuite;
 import de.rub.nds.tlsattacker.core.constants.ProtocolVersion;
 import de.rub.nds.tlsattacker.core.protocol.message.PskClientKeyExchangeMessage;
-import org.junit.jupiter.api.Test;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
+import org.junit.Before;
+import org.junit.Test;
 
-public class PskClientKeyExchangePreparatorTest
-        extends AbstractProtocolMessagePreparatorTest<
-                PskClientKeyExchangeMessage, PskClientKeyExchangePreparator> {
+public class PskClientKeyExchangePreparatorTest {
 
-    private static final String RANDOM = "CAFEBABECAFE";
-    private static final byte[] PREMASTERSECRET =
-            ArrayConverter.hexStringToByteArray("00040000000000041a2b3c4d");
+    private final static String RANDOM = "CAFEBABECAFE";
+    private final static byte[] PREMASTERSECRET = ArrayConverter.hexStringToByteArray("00040000000000041a2b3c4d");
+    private TlsContext context;
+    private PskClientKeyExchangeMessage message;
+    private PskClientKeyExchangePreparator preparator;
 
-    public PskClientKeyExchangePreparatorTest() {
-        super(PskClientKeyExchangeMessage::new, PskClientKeyExchangePreparator::new);
+    @Before
+    public void setUp() {
+        context = new TlsContext();
+        message = new PskClientKeyExchangeMessage();
+        preparator = new PskClientKeyExchangePreparator(context.getChooser(), message);
     }
 
-    /** Test of prepareHandshakeMessageContents method, of class PskClientKeyExchangePreparator. */
+    /**
+     * Test of prepareHandshakeMessageContents method, of class PskClientKeyExchangePreparator.
+     */
     @Test
-    @Override
     public void testPrepare() {
         // prepare context
         context.setSelectedProtocolVersion(ProtocolVersion.TLS12);
@@ -41,13 +47,12 @@ public class PskClientKeyExchangePreparatorTest
         preparator.prepareHandshakeMessageContents();
 
         // Tests
-        assertArrayEquals(
-                PREMASTERSECRET, message.getComputations().getPremasterSecret().getValue());
+        assertArrayEquals(PREMASTERSECRET, message.getComputations().getPremasterSecret().getValue());
         assertNotNull(message.getComputations().getClientServerRandom());
         assertArrayEquals(
-                ArrayConverter.concatenate(
-                        ArrayConverter.hexStringToByteArray(RANDOM),
-                        ArrayConverter.hexStringToByteArray(RANDOM)),
-                message.getComputations().getClientServerRandom().getValue());
+            ArrayConverter.concatenate(ArrayConverter.hexStringToByteArray(RANDOM),
+                ArrayConverter.hexStringToByteArray(RANDOM)),
+            message.getComputations().getClientServerRandom().getValue());
+
     }
 }

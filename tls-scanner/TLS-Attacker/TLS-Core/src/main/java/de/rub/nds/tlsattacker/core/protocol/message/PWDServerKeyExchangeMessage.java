@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
 import de.rub.nds.modifiablevariable.ModifiableVariableFactory;
@@ -14,25 +15,23 @@ import de.rub.nds.modifiablevariable.bytearray.ModifiableByteArray;
 import de.rub.nds.modifiablevariable.integer.ModifiableInteger;
 import de.rub.nds.modifiablevariable.singlebyte.ModifiableByte;
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.EllipticCurveType;
+import de.rub.nds.tlsattacker.core.constants.HandshakeMessageType;
 import de.rub.nds.tlsattacker.core.constants.NamedGroup;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
 import de.rub.nds.tlsattacker.core.protocol.handler.PWDServerKeyExchangeHandler;
 import de.rub.nds.tlsattacker.core.protocol.message.computations.PWDComputations;
-import de.rub.nds.tlsattacker.core.protocol.parser.PWDServerKeyExchangeParser;
-import de.rub.nds.tlsattacker.core.protocol.preparator.PWDServerKeyExchangePreparator;
-import de.rub.nds.tlsattacker.core.protocol.serializer.PWDServerKeyExchangeSerializer;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import java.io.InputStream;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "PWDServerKeyExchange")
-public class PWDServerKeyExchangeMessage
-        extends ServerKeyExchangeMessage<PWDServerKeyExchangeMessage> {
+public class PWDServerKeyExchangeMessage extends ServerKeyExchangeMessage {
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     private ModifiableInteger saltLength;
 
-    @ModifiableVariableProperty private ModifiableByteArray salt;
+    @ModifiableVariableProperty
+    private ModifiableByteArray salt;
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.TLS_CONSTANT)
     protected ModifiableByte curveType;
@@ -43,17 +42,23 @@ public class PWDServerKeyExchangeMessage
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     private ModifiableInteger elementLength;
 
-    @ModifiableVariableProperty private ModifiableByteArray element;
+    @ModifiableVariableProperty
+    private ModifiableByteArray element;
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     private ModifiableInteger scalarLength;
 
-    @ModifiableVariableProperty private ModifiableByteArray scalar;
+    @ModifiableVariableProperty
+    private ModifiableByteArray scalar;
 
     protected PWDComputations computations;
 
     public PWDServerKeyExchangeMessage() {
         super();
+    }
+
+    public PWDServerKeyExchangeMessage(Config tlsConfig) {
+        super(tlsConfig, HandshakeMessageType.SERVER_KEY_EXCHANGE);
     }
 
     @Override
@@ -69,24 +74,8 @@ public class PWDServerKeyExchangeMessage
     }
 
     @Override
-    public PWDServerKeyExchangeHandler getHandler(TlsContext tlsContext) {
-        return new PWDServerKeyExchangeHandler(tlsContext);
-    }
-
-    @Override
-    public PWDServerKeyExchangeParser getParser(TlsContext tlsContext, InputStream stream) {
-        return new PWDServerKeyExchangeParser(stream, tlsContext);
-    }
-
-    @Override
-    public PWDServerKeyExchangePreparator getPreparator(TlsContext tlsContext) {
-        return new PWDServerKeyExchangePreparator(tlsContext.getChooser(), this);
-    }
-
-    @Override
-    public PWDServerKeyExchangeSerializer getSerializer(TlsContext tlsContext) {
-        return new PWDServerKeyExchangeSerializer(
-                this, tlsContext.getChooser().getSelectedProtocolVersion());
+    public PWDServerKeyExchangeHandler getHandler(TlsContext context) {
+        return new PWDServerKeyExchangeHandler(context);
     }
 
     public ModifiableInteger getSaltLength() {
@@ -146,8 +135,7 @@ public class PWDServerKeyExchangeMessage
     }
 
     public void setElementLength(int elementLength) {
-        this.elementLength =
-                ModifiableVariableFactory.safelySetValue(this.elementLength, elementLength);
+        this.elementLength = ModifiableVariableFactory.safelySetValue(this.elementLength, elementLength);
     }
 
     public ModifiableByteArray getElement() {
@@ -171,8 +159,7 @@ public class PWDServerKeyExchangeMessage
     }
 
     public void setScalarLength(int scalarLength) {
-        this.scalarLength =
-                ModifiableVariableFactory.safelySetValue(this.scalarLength, scalarLength);
+        this.scalarLength = ModifiableVariableFactory.safelySetValue(this.scalarLength, scalarLength);
     }
 
     public ModifiableByteArray getScalar() {
@@ -227,12 +214,7 @@ public class PWDServerKeyExchangeMessage
 
     @Override
     public String toCompactString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("PWD_SERVER_KEY_EXCHANGE");
-        if (isRetransmission()) {
-            sb.append(" (ret.)");
-        }
-        return sb.toString();
+        return "PWD_SERVER_KEY_EXCHANGE";
     }
 
     @Override

@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.config.filter;
 
 import de.rub.nds.tlsattacker.core.config.Config;
@@ -23,8 +24,7 @@ public class RemoveDefaultValues implements ConfigDisplayFilter {
     public void applyFilter(Config config) {
         Config defaultConfig = Config.createConfig();
         for (Field field : Config.class.getDeclaredFields()) {
-            if (!(Modifier.isStatic(field.getModifiers())
-                    || Modifier.isFinal(field.getModifiers()))) {
+            if (!(Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers()))) {
                 if (field.getType().isArray() || !field.getType().isPrimitive()) {
                     field.setAccessible(true);
                     try {
@@ -35,8 +35,7 @@ public class RemoveDefaultValues implements ConfigDisplayFilter {
                                 if (Array.getLength(defaultValue) == Array.getLength(configValue)) {
                                     boolean equal = true;
                                     for (int i = 0; i < Array.getLength(defaultValue); i++) {
-                                        if (!Array.get(defaultValue, i)
-                                                .equals(Array.get(configValue, i))) {
+                                        if (!Array.get(defaultValue, i).equals(Array.get(configValue, i))) {
                                             equal = false;
                                             break;
                                         }
@@ -59,4 +58,5 @@ public class RemoveDefaultValues implements ConfigDisplayFilter {
             }
         }
     }
+
 }

@@ -1,47 +1,61 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.config.delegate;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.beust.jcommander.JCommander;
 import de.rub.nds.tlsattacker.core.config.Config;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
-public class TimeoutDelegateTest extends AbstractDelegateTest<TimeoutDelegate> {
+public class TimeoutDelegateTest {
 
-    @BeforeEach
+    private TimeoutDelegate delegate;
+    private JCommander jcommander;
+    private String[] args;
+
+    @Before
     public void setUp() {
-        super.setUp(new TimeoutDelegate());
+        this.delegate = new TimeoutDelegate();
+        this.jcommander = new JCommander(delegate);
     }
 
-    /** Test of getTimeout method, of class TimeoutDelegate. */
+    /**
+     * Test of getTimeout method, of class TimeoutDelegate.
+     */
     @Test
     public void testGetTimeout() {
         args = new String[2];
         args[0] = "-timeout";
         args[1] = "123";
-        assertNull(delegate.getTimeout());
+        assertTrue(delegate.getTimeout() == null);
         jcommander.parse(args);
-        assertEquals(123, (int) delegate.getTimeout());
+        assertTrue(delegate.getTimeout() == 123);
     }
 
-    /** Test of setTimeout method, of class TimeoutDelegate. */
+    /**
+     * Test of setTimeout method, of class TimeoutDelegate.
+     */
     @Test
     public void testSetTimeout() {
-        assertNull(delegate.getTimeout());
+        assertTrue(delegate.getTimeout() == null);
         delegate.setTimeout(123);
-        assertEquals(123, (int) delegate.getTimeout());
+        assertTrue(delegate.getTimeout() == 123);
     }
 
-    /** Test of applyDelegate method, of class TimeoutDelegate. */
+    /**
+     * Test of applyDelegate method, of class TimeoutDelegate.
+     */
     @Test
     public void testApplyDelegate() {
         Config config = Config.createConfig();
@@ -55,8 +69,8 @@ public class TimeoutDelegateTest extends AbstractDelegateTest<TimeoutDelegate> {
         jcommander.parse(args);
         delegate.applyDelegate(config);
 
-        assertEquals(expectedTimeout, config.getDefaultClientConnection().getTimeout().intValue());
-        assertEquals(expectedTimeout, config.getDefaultServerConnection().getTimeout().intValue());
+        assertThat(config.getDefaultClientConnection().getTimeout(), equalTo(expectedTimeout));
+        assertThat(config.getDefaultServerConnection().getTimeout(), equalTo(expectedTimeout));
     }
 
     @Test
@@ -64,7 +78,7 @@ public class TimeoutDelegateTest extends AbstractDelegateTest<TimeoutDelegate> {
         Config config = Config.createConfig();
         Config config2 = Config.createConfig();
         delegate.applyDelegate(config);
-        assertTrue(EqualsBuilder.reflectionEquals(config, config2)); // little
+        assertTrue(EqualsBuilder.reflectionEquals(config, config2));// little
         // ugly
     }
 }

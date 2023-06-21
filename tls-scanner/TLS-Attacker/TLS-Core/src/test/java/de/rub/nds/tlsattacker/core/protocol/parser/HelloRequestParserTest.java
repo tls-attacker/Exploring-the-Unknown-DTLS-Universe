@@ -1,33 +1,57 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.parser;
 
-import de.rub.nds.modifiablevariable.util.ArrayConverter;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.HandshakeMessageType;
 import de.rub.nds.tlsattacker.core.constants.ProtocolVersion;
 import de.rub.nds.tlsattacker.core.protocol.message.HelloRequestMessage;
-import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+import java.util.Arrays;
+import java.util.Collection;
+import static org.junit.Assert.*;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-public class HelloRequestParserTest
-        extends AbstractHandshakeMessageParserTest<HelloRequestMessage, HelloRequestParser> {
+@RunWith(Parameterized.class)
+public class HelloRequestParserTest {
 
-    public HelloRequestParserTest() {
-        super(HelloRequestMessage.class, HelloRequestParser::new);
+    @Parameterized.Parameters
+    public static Collection<Object[]> generateData() {
+        return Arrays.asList(new Object[][] {}); // TODO add Testcases!
     }
 
-    public static Stream<Arguments> provideTestVectors() {
-        return Stream.of(
-                Arguments.of(
-                        ProtocolVersion.TLS12,
-                        ArrayConverter.hexStringToByteArray("00000000"),
-                        List.of(HandshakeMessageType.HELLO_REQUEST.getValue(), 0)));
+    // TODO get a true message
+    private final byte[] message;
+
+    private final HandshakeMessageType type;
+    private final int length;
+    private final Config config = Config.createConfig();
+
+    public HelloRequestParserTest(byte[] message, int start, byte[] expectedPart, HandshakeMessageType type,
+        int length) {
+        this.message = message;
+        this.type = type;
+        this.length = length;
     }
+
+    /**
+     * Test of parse method, of class HelloRequestParser.
+     */
+    @Test
+    public void testParse() {
+        HelloRequestParser parser = new HelloRequestParser(0, message, ProtocolVersion.TLS12, config);
+        HelloRequestMessage msg = parser.parse();
+        assertArrayEquals(message, msg.getCompleteResultingMessage().getValue());
+        assertTrue(msg.getLength().getValue() == length);
+        assertTrue(msg.getType().getValue() == type.getValue());
+    }
+
 }

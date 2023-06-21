@@ -1,28 +1,40 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.preparator;
 
 import de.rub.nds.tlsattacker.core.protocol.message.CertificateStatusMessage;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import org.junit.Before;
+import org.junit.Test;
 
-public class CertificateStatusPreparatorTest
-        extends AbstractProtocolMessagePreparatorTest<
-                CertificateStatusMessage, CertificateStatusPreparator> {
+public class CertificateStatusPreparatorTest {
 
-    public CertificateStatusPreparatorTest() {
-        super(CertificateStatusMessage::new, CertificateStatusPreparator::new);
+    private CertificateStatusMessage message;
+    private CertificateStatusPreparator preparator;
+    private TlsContext context;
+
+    @Before
+    public void setUp() {
+        message = new CertificateStatusMessage();
+        context = new TlsContext();
+        preparator = new CertificateStatusPreparator(context.getChooser(), message);
     }
 
     // TODO: Preparator is a stub so far, so no special tests here so far.
     @Test
-    @Disabled("Not implemented")
-    @Override
-    public void testPrepare() {}
+    public void testPrepare() {
+        preparator.prepare();
+    }
+
+    @Test
+    public void testNoContextPrepare() {
+        preparator.prepare();
+    }
 }

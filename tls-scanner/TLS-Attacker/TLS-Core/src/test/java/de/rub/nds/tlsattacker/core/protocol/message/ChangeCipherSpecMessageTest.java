@@ -1,25 +1,40 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.After;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-public class ChangeCipherSpecMessageTest extends AbstractMessageTest<ChangeCipherSpecMessage> {
+public class ChangeCipherSpecMessageTest {
+    ChangeCipherSpecMessage message;
 
-    public ChangeCipherSpecMessageTest() {
-        super(
-                ChangeCipherSpecMessage::new,
-                "ChangeCipherSpecMessage:\n" + "  CCS ProtocolType: %s");
+    @Before
+    public void setUp() {
+        message = new ChangeCipherSpecMessage();
     }
 
-    public static Stream<Arguments> provideToStringTestVectors() {
-        return Stream.of(Arguments.of(new Object[] {null}, null));
+    @After
+    public void tearDown() {
+    }
+
+    /**
+     * Test of toString method, of class ChangeCipherSpecMessage.
+     */
+    @Test
+    public void testToString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ChangeCipherSpecMessage:");
+        sb.append("\n  CCS ProtocolType: ").append("null");
+
+        assertEquals(sb.toString(), message.toString());
     }
 }

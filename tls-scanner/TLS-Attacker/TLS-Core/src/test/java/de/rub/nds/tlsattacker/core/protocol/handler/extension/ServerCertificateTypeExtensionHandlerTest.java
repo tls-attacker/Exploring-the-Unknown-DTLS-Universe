@@ -1,41 +1,66 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.protocol.handler.extension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package de.rub.nds.tlsattacker.core.protocol.handler.extension;
 
 import de.rub.nds.tlsattacker.core.constants.CertificateType;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.ServerCertificateTypeExtensionMessage;
+import de.rub.nds.tlsattacker.core.protocol.parser.extension.ServerCertificateTypeExtensionParser;
+import de.rub.nds.tlsattacker.core.protocol.preparator.extension.ServerCertificateTypeExtensionPreparator;
+import de.rub.nds.tlsattacker.core.protocol.serializer.extension.ServerCertificateTypeExtensionSerializer;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
-public class ServerCertificateTypeExtensionHandlerTest
-        extends AbstractExtensionMessageHandlerTest<
-                ServerCertificateTypeExtensionMessage, ServerCertificateTypeExtensionHandler> {
+public class ServerCertificateTypeExtensionHandlerTest {
 
     private final List<CertificateType> certList =
-            Arrays.asList(
-                    CertificateType.OPEN_PGP, CertificateType.X509, CertificateType.RAW_PUBLIC_KEY);
+        Arrays.asList(CertificateType.OPEN_PGP, CertificateType.X509, CertificateType.RAW_PUBLIC_KEY);
+    private ServerCertificateTypeExtensionHandler handler;
+    private TlsContext context;
 
-    public ServerCertificateTypeExtensionHandlerTest() {
-        super(
-                ServerCertificateTypeExtensionMessage::new,
-                ServerCertificateTypeExtensionHandler::new);
+    @Before
+    public void setUp() {
+        context = new TlsContext();
+        handler = new ServerCertificateTypeExtensionHandler(context);
     }
 
     @Test
-    @Override
-    public void testadjustTLSExtensionContext() {
+    public void testAdjustTLSContext() {
         ServerCertificateTypeExtensionMessage msg = new ServerCertificateTypeExtensionMessage();
         msg.setCertificateTypes(CertificateType.toByteArray(certList));
-        handler.adjustTLSExtensionContext(msg);
-        assertEquals(certList, context.getServerCertificateTypeDesiredTypes());
+
+        handler.adjustTLSContext(msg);
+
+        assertThat(certList, is(context.getServerCertificateTypeDesiredTypes()));
+    }
+
+    @Test
+    public void testGetParser() {
+        assertTrue(
+            handler.getParser(new byte[0], 0, context.getConfig()) instanceof ServerCertificateTypeExtensionParser);
+    }
+
+    @Test
+    public void testGetPreparator() {
+        assertTrue(handler.getPreparator(
+            new ServerCertificateTypeExtensionMessage()) instanceof ServerCertificateTypeExtensionPreparator);
+    }
+
+    @Test
+    public void testGetSerializer() {
+        assertTrue(handler.getSerializer(
+            new ServerCertificateTypeExtensionMessage()) instanceof ServerCertificateTypeExtensionSerializer);
     }
 }

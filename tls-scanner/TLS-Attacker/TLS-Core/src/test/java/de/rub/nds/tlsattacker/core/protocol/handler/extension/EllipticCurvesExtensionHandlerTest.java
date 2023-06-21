@@ -1,44 +1,81 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.protocol.handler.extension;
 
-import static org.junit.jupiter.api.Assertions.*;
+package de.rub.nds.tlsattacker.core.protocol.handler.extension;
 
 import de.rub.nds.tlsattacker.core.constants.NamedGroup;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.EllipticCurvesExtensionMessage;
-import org.junit.jupiter.api.Test;
+import de.rub.nds.tlsattacker.core.protocol.parser.extension.EllipticCurvesExtensionParser;
+import de.rub.nds.tlsattacker.core.protocol.preparator.extension.EllipticCurvesExtensionPreparator;
+import de.rub.nds.tlsattacker.core.protocol.serializer.extension.EllipticCurvesExtensionSerializer;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-public class EllipticCurvesExtensionHandlerTest
-        extends AbstractExtensionMessageHandlerTest<
-                EllipticCurvesExtensionMessage, EllipticCurvesExtensionHandler> {
+public class EllipticCurvesExtensionHandlerTest {
 
-    public EllipticCurvesExtensionHandlerTest() {
-        super(EllipticCurvesExtensionMessage::new, EllipticCurvesExtensionHandler::new);
+    private EllipticCurvesExtensionHandler handler;
+    private TlsContext context;
+
+    @Before
+    public void setUp() {
+        context = new TlsContext();
+        handler = new EllipticCurvesExtensionHandler(context);
     }
 
-    /** Test of adjustContext method, of class EllipticCurvesExtensionHandler. */
+    /**
+     * Test of adjustTLSContext method, of class EllipticCurvesExtensionHandler.
+     */
     @Test
-    @Override
-    public void testadjustTLSExtensionContext() {
+    public void testAdjustTLSContext() {
         EllipticCurvesExtensionMessage msg = new EllipticCurvesExtensionMessage();
-        msg.setSupportedGroups(new byte[] {0, 1, 0, 2});
-        handler.adjustTLSExtensionContext(msg);
-        assertEquals(2, context.getClientNamedGroupsList().size());
-        assertSame(NamedGroup.SECT163K1, context.getClientNamedGroupsList().get(0));
-        assertSame(NamedGroup.SECT163R1, context.getClientNamedGroupsList().get(1));
+        msg.setSupportedGroups(new byte[] { 0, 1, 0, 2 });
+        handler.adjustTLSContext(msg);
+        assertTrue(context.getClientNamedGroupsList().size() == 2);
+        assertTrue(context.getClientNamedGroupsList().get(0) == NamedGroup.SECT163K1);
+        assertTrue(context.getClientNamedGroupsList().get(1) == NamedGroup.SECT163R1);
     }
 
     @Test
-    public void testadjustContextUnknownCurve() {
+    public void testAdjustTLSContextUnknownCurve() {
         EllipticCurvesExtensionMessage msg = new EllipticCurvesExtensionMessage();
-        msg.setSupportedGroups(new byte[] {(byte) 0xFF, (byte) 0xEE});
-        handler.adjustContext(msg);
+        msg.setSupportedGroups(new byte[] { (byte) 0xFF, (byte) 0xEE });
+        handler.adjustTLSContext(msg);
         assertTrue(context.getClientNamedGroupsList().isEmpty());
     }
+
+    /**
+     * Test of getParser method, of class EllipticCurvesExtensionHandler.
+     */
+    @Test
+    public void testGetParser() {
+        assertTrue(
+            handler.getParser(new byte[] { 1, 2 }, 0, context.getConfig()) instanceof EllipticCurvesExtensionParser);
+    }
+
+    /**
+     * Test of getPreparator method, of class EllipticCurvesExtensionHandler.
+     */
+    @Test
+    public void testGetPreparator() {
+        assertTrue(
+            handler.getPreparator(new EllipticCurvesExtensionMessage()) instanceof EllipticCurvesExtensionPreparator);
+    }
+
+    /**
+     * Test of getSerializer method, of class EllipticCurvesExtensionHandler.
+     */
+    @Test
+    public void testGetSerializer() {
+        assertTrue(
+            handler.getSerializer(new EllipticCurvesExtensionMessage()) instanceof EllipticCurvesExtensionSerializer);
+    }
+
 }

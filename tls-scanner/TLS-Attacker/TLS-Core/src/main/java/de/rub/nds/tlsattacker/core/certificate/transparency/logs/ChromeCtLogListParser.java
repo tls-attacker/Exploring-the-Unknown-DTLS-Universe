@@ -1,25 +1,26 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.certificate.transparency.logs;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import de.rub.nds.tlsattacker.core.certificate.transparency.SignedCertificateTimestampSignature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public class ChromeCtLogListParser implements CtLogListParser {
 
@@ -32,20 +33,12 @@ public class ChromeCtLogListParser implements CtLogListParser {
 
         CtLogList ctLogList = new CtLogList();
 
-        JSONObject jsonFile = null;
-        try (InputStream inputStream =
-                ChromeCtLogListParser.class.getClassLoader().getResourceAsStream(filename)) {
-            assert inputStream != null;
-            InputStreamReader streamReader =
-                    new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-            BufferedReader bufferedReader = new BufferedReader(streamReader);
-            jsonFile = (JSONObject) jsonParser.parse(bufferedReader);
-        } catch (IOException | ParseException e) {
-            LOGGER.warn("Could not parse Chrome CT log list from " + filename, e);
-        }
-        assert jsonFile != null;
+        InputStream inputStream = ChromeCtLogListParser.class.getClassLoader().getResourceAsStream(filename);
+        InputStreamReader streamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        BufferedReader bufferedReader = new BufferedReader(streamReader);
 
         try {
+            JSONObject jsonFile = (JSONObject) jsonParser.parse(bufferedReader);
             JSONArray operators = (JSONArray) jsonFile.get("operators");
 
             for (Object operatorObj : operators) {

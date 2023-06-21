@@ -1,14 +1,13 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.state;
 
-import static org.junit.jupiter.api.Assertions.*;
+package de.rub.nds.tlsattacker.core.state;
 
 import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.connection.InboundConnection;
@@ -17,19 +16,28 @@ import de.rub.nds.tlsattacker.core.constants.CipherSuite;
 import de.rub.nds.tlsattacker.core.constants.RunningModeType;
 import de.rub.nds.tlsattacker.core.exceptions.ConfigurationException;
 import de.rub.nds.tlsattacker.core.exceptions.ContextHandlingException;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
 import de.rub.nds.tlsattacker.core.workflow.WorkflowTrace;
 import de.rub.nds.tlsattacker.core.workflow.factory.WorkflowTraceType;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThat;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class StateTest {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void emptyInitUsesWorkflowTraceTypeFromConfig() {
         State s = new State();
         assertNotNull(s.getConfig());
         assertNotNull(s.getWorkflowTrace());
-        assertNotNull(s.getContext());
+        assertNotNull(s.getTlsContext());
         // TODO: assertThat(workflowTrace.getType(),
         // isEqual(config.getWorkflowTraceType());
     }
@@ -38,10 +46,9 @@ public class StateTest {
     public void initWithoutWorkflowTraceFailsProperly() {
         Config config = Config.createConfig();
         config.setWorkflowTraceType(null);
-
-        ConfigurationException exception =
-                assertThrows(ConfigurationException.class, () -> new State(config));
-        assertTrue(exception.getMessage().startsWith("Could not load workflow trace"));
+        exception.expect(ConfigurationException.class);
+        exception.expectMessage("Could not load workflow trace");
+        State s = new State(config);
     }
 
     @Test
@@ -54,7 +61,7 @@ public class StateTest {
         assertNotNull(s.getConfig());
         assertEquals(s.getConfig(), config);
         assertNotNull(s.getWorkflowTrace());
-        assertNotNull(s.getContext());
+        assertNotNull(s.getTlsContext());
         assertEquals(config.getDefaultApplicationMessageData(), expected);
         // TODO: assertThat(workflowTrace.getType(),
         // isEqual(WorkflowTraceType.SHORT_HELLO));
@@ -72,28 +79,28 @@ public class StateTest {
         assertEquals(config.getDefaultApplicationMessageData(), expected);
 
         assertNotNull(s.getWorkflowTrace());
-        assertNotNull(s.getContext());
+        assertNotNull(s.getTlsContext());
 
-        assertEquals(s.getContext().getConnection(), trace.getConnections().get(0));
+        assertEquals(s.getTlsContext().getConnection(), trace.getConnections().get(0));
     }
 
-    /** Assure that connection aliases are unique. */
+    /**
+     * Assure that connection aliases are unique.
+     */
     @Test
     public void settingDifferentConnectionsWithSameAliasFails() {
         WorkflowTrace trace = new WorkflowTrace();
         trace.addConnection(new OutboundConnection("conEnd1"));
         trace.addConnection(new InboundConnection("conEnd1"));
 
-        ConfigurationException exception =
-                assertThrows(ConfigurationException.class, () -> new State(trace));
-        assertEquals(
-                "Workflow trace not well defined. Trace contains connections with the same alias",
-                exception.getMessage());
+        exception.expect(ConfigurationException.class);
+        exception.expectMessage("Workflow trace not well defined. Trace contains" + " connections with the same alias");
+        State s = new State(trace);
     }
 
     /**
-     * Prevent accidental misuse of single/default context getter. If multiple contexts are defined,
-     * require the user to specify an alias to get the appropriate context.
+     * Prevent accidental misuse of single/default context getter. If multiple contexts are defined, require the user to
+     * specify an alias to get the appropriate context.
      */
     @Test
     public void getContextRequiresAliasForMultipleDefinedContexts() {
@@ -102,24 +109,22 @@ public class StateTest {
         trace.addConnection(new InboundConnection("conEnd2"));
         State s = new State(trace);
 
-        ConfigurationException exception =
-                assertThrows(ConfigurationException.class, s::getTlsContext);
-        assertEquals(
-                "getContext requires an alias if multiple contexts are defined",
-                exception.getMessage());
+        exception.expect(ConfigurationException.class);
+        exception.expectMessage("getTlsContext requires an alias if multiple contexts are defined");
+        TlsContext c = s.getTlsContext();
     }
 
     @Test
     public void settingSingleContextWorkflowWithUnsupportedModeFails() {
+
         Config config = Config.createConfig();
         config.setDefaultRunningMode(RunningModeType.MITM);
         config.setWorkflowTraceType(WorkflowTraceType.HELLO);
 
-        ConfigurationException exception =
-                assertThrows(ConfigurationException.class, () -> new State(config));
-        assertEquals(
-                "This workflow can only be configured for modes CLIENT and SERVER, but actual mode was MITM",
-                exception.getMessage());
+        exception.expect(ConfigurationException.class);
+        exception.expectMessage(
+            "This workflow can only be configured for modes CLIENT and " + "SERVER, but actual mode was MITM");
+        State state = new State(config);
     }
 
     @Test
@@ -131,11 +136,10 @@ public class StateTest {
         origCtx.setSelectedCipherSuite(CipherSuite.TLS_FALLBACK_SCSV);
         newCtx.setSelectedCipherSuite(CipherSuite.TLS_AES_128_CCM_SHA256);
 
-        assertSame(CipherSuite.TLS_FALLBACK_SCSV, state.getTlsContext().getSelectedCipherSuite());
-        state.replaceContext(newCtx.getContext());
+        assertThat(state.getTlsContext().getSelectedCipherSuite(), equalTo(CipherSuite.TLS_FALLBACK_SCSV));
+        state.replaceTlsContext(newCtx);
         assertNotSame(state.getTlsContext(), origCtx);
-        assertSame(
-                CipherSuite.TLS_AES_128_CCM_SHA256, state.getTlsContext().getSelectedCipherSuite());
+        assertThat(state.getTlsContext().getSelectedCipherSuite(), equalTo(CipherSuite.TLS_AES_128_CCM_SHA256));
     }
 
     @Test
@@ -146,20 +150,17 @@ public class StateTest {
         trace.addConnection(new OutboundConnection(conAlias1));
         trace.addConnection(new InboundConnection(conAlias2));
         State state = new State(trace);
-        TlsContext origCtx1 = state.getContext(conAlias1).getTlsContext();
+        TlsContext origCtx1 = state.getTlsContext(conAlias1);
         TlsContext newCtx = new TlsContext();
         newCtx.setConnection(origCtx1.getConnection());
         origCtx1.setSelectedCipherSuite(CipherSuite.TLS_FALLBACK_SCSV);
         newCtx.setSelectedCipherSuite(CipherSuite.TLS_AES_128_CCM_SHA256);
 
-        assertSame(
-                CipherSuite.TLS_FALLBACK_SCSV,
-                state.getTlsContext(conAlias1).getSelectedCipherSuite());
-        state.replaceContext(newCtx.getContext());
+        assertThat(state.getTlsContext(conAlias1).getSelectedCipherSuite(), equalTo(CipherSuite.TLS_FALLBACK_SCSV));
+        state.replaceTlsContext(newCtx);
         assertNotSame(state.getTlsContext(conAlias1), origCtx1);
-        assertSame(
-                CipherSuite.TLS_AES_128_CCM_SHA256,
-                state.getTlsContext(conAlias1).getSelectedCipherSuite());
+        assertThat(state.getTlsContext(conAlias1).getSelectedCipherSuite(),
+            equalTo(CipherSuite.TLS_AES_128_CCM_SHA256));
     }
 
     @Test
@@ -169,11 +170,9 @@ public class StateTest {
         TlsContext newCtx = new TlsContext();
         newCtx.setConnection(new InboundConnection("NewAlias"));
 
-        ConfigurationException exception =
-                assertThrows(
-                        ConfigurationException.class,
-                        () -> state.replaceContext(newCtx.getContext()));
-        assertTrue(exception.getMessage().startsWith("No Context to replace for alias"));
+        exception.expect(ConfigurationException.class);
+        exception.expectMessage("No TlsContext to replace for alias");
+        state.replaceTlsContext(newCtx);
     }
 
     @Test
@@ -183,12 +182,9 @@ public class StateTest {
         TlsContext newCtx = new TlsContext();
         newCtx.setConnection(new InboundConnection(origCtx.getConnection().getAlias(), 87311));
 
-        ContextHandlingException exception =
-                assertThrows(
-                        ContextHandlingException.class,
-                        () -> state.replaceContext(newCtx.getContext()));
-        assertEquals(
-                "Cannot replace Context because the new Context defines another connection.",
-                exception.getMessage());
+        exception.expect(ContextHandlingException.class);
+        exception
+            .expectMessage("Cannot replace TlsContext because the new TlsContext defines " + "another connection.");
+        state.replaceTlsContext(newCtx);
     }
 }

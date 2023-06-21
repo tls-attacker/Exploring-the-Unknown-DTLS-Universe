@@ -1,16 +1,17 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.workflow.action;
 
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
 import de.rub.nds.tlsattacker.core.record.cipher.RecordCipher;
-import jakarta.xml.bind.annotation.XmlRootElement;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class ActivateEncryptionAction extends ActivateCryptoAction {
@@ -20,4 +21,5 @@ public class ActivateEncryptionAction extends ActivateCryptoAction {
         LOGGER.info("Setting new encryption cipher and activating encryption");
         tlsContext.getRecordLayer().updateEncryptionCipher(recordCipher);
     }
+
 }

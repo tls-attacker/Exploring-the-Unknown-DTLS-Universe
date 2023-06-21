@@ -1,22 +1,24 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.certificate.transparency;
 
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.tlsattacker.core.certificate.transparency.logs.CtLog;
 import de.rub.nds.tlsattacker.core.certificate.transparency.logs.CtLogList;
 import de.rub.nds.tlsattacker.core.certificate.transparency.logs.CtLogListLoader;
+import org.bouncycastle.asn1.x509.Certificate;
+
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import org.bouncycastle.asn1.x509.Certificate;
 
 public class SignedCertificateTimestamp {
 
@@ -113,7 +115,7 @@ public class SignedCertificateTimestamp {
         if (version == SignedCertificateTimestampVersion.V1) {
             sb.append("v1 (0x0)");
         } else {
-            sb.append("0x").append(Integer.toHexString(encodedTimestamp[0]));
+            sb.append(Integer.toHexString(encodedTimestamp[0]));
         }
 
         sb.append("\n Log: ");
@@ -127,11 +129,8 @@ public class SignedCertificateTimestamp {
         sb.append(ArrayConverter.bytesToHexString(this.logId).replaceAll("\\n", "\n    "));
 
         sb.append("\n Timestamp: ");
-        DateTimeFormatter outputFormatter =
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
-        sb.append(
-                outputFormatter.format(
-                        LocalDateTime.ofEpochSecond(timestamp / 1000L, 0, ZoneOffset.UTC)));
+        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        sb.append(outputFormatter.format(LocalDateTime.ofEpochSecond(timestamp / 1000L, 0, ZoneOffset.UTC)));
 
         sb.append("\n Extensions: ");
         if (extensions.length == 0) {

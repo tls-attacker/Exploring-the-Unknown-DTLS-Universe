@@ -85,128 +85,89 @@ Test a MITM workflow trace
 <workflowTrace>
     <InboundConnection>
         <alias>server</alias>
-        <ip>localhost</ip>
         <port>443</port>
         <hostname>localhost</hostname>
         <timeout>1000</timeout>
-        <firstTimeout>1000</firstTimeout>
-        <connectionTimeout>8000</connectionTimeout>
         <transportHandlerType>TCP</transportHandlerType>
     </InboundConnection>
     <OutboundConnection>
         <alias>client</alias>
-        <ip>localhost</ip>
         <port>443</port>
         <hostname>localhost</hostname>
         <timeout>1000</timeout>
-        <firstTimeout>1000</firstTimeout>
-        <connectionTimeout>8000</connectionTimeout>
         <transportHandlerType>TCP</transportHandlerType>
     </OutboundConnection>
     <Receive>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <messages/>
-        <httpMessages/>
         <records/>
-        <fragments/>
         <expectedMessages>
             <ClientHello/>
         </expectedMessages>
-        <expectedHttpMessages/>
     </Receive>
     <Send>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <messages>
-            <ServerHello>
-                <autoSetHelloRetryModeInKeyShare>true</autoSetHelloRetryModeInKeyShare>
-            </ServerHello>
+            <ServerHello/>
             <Certificate/>
             <ServerHelloDone/>
         </messages>
-        <httpMessages/>
         <records/>
-        <fragments/>
     </Send>
     <Receive>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <messages/>
-        <httpMessages/>
         <records/>
-        <fragments/>
         <expectedMessages>
             <RSAClientKeyExchange/>
             <ChangeCipherSpec/>
             <Finished/>
         </expectedMessages>
-        <expectedHttpMessages/>
     </Receive>
     <Send>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <messages>
             <ChangeCipherSpec/>
             <Finished/>
         </messages>
-        <httpMessages/>
         <records/>
-        <fragments/>
     </Send>
     <Send>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <messages>
             <ClientHello/>
         </messages>
-        <httpMessages/>
         <records/>
-        <fragments/>
     </Send>
     <Receive>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <messages/>
-        <httpMessages/>
         <records/>
-        <fragments/>
         <expectedMessages>
-            <ServerHello>
-                <autoSetHelloRetryModeInKeyShare>true</autoSetHelloRetryModeInKeyShare>
-            </ServerHello>
+            <ServerHello/>
             <Certificate/>
             <ServerHelloDone/>
         </expectedMessages>
-        <expectedHttpMessages/>
     </Receive>
     <Send>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <messages>
             <RSAClientKeyExchange/>
             <ChangeCipherSpec/>
             <Finished/>
         </messages>
-        <httpMessages/>
         <records/>
-        <fragments/>
     </Send>
     <Receive>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <messages/>
-        <httpMessages/>
         <records/>
-        <fragments/>
         <expectedMessages>
             <ChangeCipherSpec/>
             <Finished/>
         </expectedMessages>
-        <expectedHttpMessages/>
     </Receive>
     <PrintLastHandledApplicationData>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <stringEncoding>US-ASCII</stringEncoding>
     </PrintLastHandledApplicationData>
@@ -225,25 +186,20 @@ Test a MITM workflow trace
         <hostname>localhost</hostname>
     </OutboundConnection>
     <Receive>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <expectedMessages>
             <ClientHello/>
         </expectedMessages>
     </Receive>
     <Send>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <messages>
-            <ServerHello>
-                <autoSetHelloRetryModeInKeyShare>true</autoSetHelloRetryModeInKeyShare>
-            </ServerHello>
+            <ServerHello/>
             <Certificate/>
             <ServerHelloDone/>
         </messages>
     </Send>
     <Receive>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <expectedMessages>
             <RSAClientKeyExchange/>
@@ -252,7 +208,6 @@ Test a MITM workflow trace
         </expectedMessages>
     </Receive>
     <Send>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <messages>
             <ChangeCipherSpec/>
@@ -260,25 +215,20 @@ Test a MITM workflow trace
         </messages>
     </Send>
     <Send>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <messages>
             <ClientHello/>
         </messages>
     </Send>
     <Receive>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <expectedMessages>
-            <ServerHello>
-                <autoSetHelloRetryModeInKeyShare>true</autoSetHelloRetryModeInKeyShare>
-            </ServerHello>
+            <ServerHello/>
             <Certificate/>
             <ServerHelloDone/>
         </expectedMessages>
     </Receive>
     <Send>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <messages>
             <RSAClientKeyExchange/>
@@ -287,7 +237,6 @@ Test a MITM workflow trace
         </messages>
     </Send>
     <Receive>
-        <actionOptions/>
         <connectionAlias>client</connectionAlias>
         <expectedMessages>
             <ChangeCipherSpec/>
@@ -295,7 +244,6 @@ Test a MITM workflow trace
         </expectedMessages>
     </Receive>
     <PrintLastHandledApplicationData>
-        <actionOptions/>
         <connectionAlias>server</connectionAlias>
         <stringEncoding>US-ASCII</stringEncoding>
     </PrintLastHandledApplicationData>

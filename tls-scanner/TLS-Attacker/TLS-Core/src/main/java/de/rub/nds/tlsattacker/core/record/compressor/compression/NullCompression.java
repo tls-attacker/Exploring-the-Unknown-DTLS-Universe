@@ -1,16 +1,20 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.record.compressor.compression;
 
 import de.rub.nds.tlsattacker.core.constants.CompressionMethod;
 
-/** */
+/**
+ *
+ *
+ */
 public class NullCompression extends CompressionAlgorithm {
 
     public NullCompression() {
@@ -20,8 +24,9 @@ public class NullCompression extends CompressionAlgorithm {
     /**
      * Null Compression just passes the data through
      *
-     * @param data The Data that should be compressed
-     * @return Compressed Bytes
+     * @param  data
+     *              The Data that should be compressed
+     * @return      Compressed Bytes
      */
     @Override
     public byte[] compress(byte[] data) {
@@ -32,4 +37,5 @@ public class NullCompression extends CompressionAlgorithm {
     public byte[] decompress(byte[] data) {
         return data;
     }
+
 }

@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.crypto;
 
 import org.bouncycastle.crypto.digests.SHA1Digest;
@@ -26,5 +27,7 @@ public class SHA1Utils {
         return sha1Output;
     }
 
-    private SHA1Utils() {}
+    private SHA1Utils() {
+    }
+
 }

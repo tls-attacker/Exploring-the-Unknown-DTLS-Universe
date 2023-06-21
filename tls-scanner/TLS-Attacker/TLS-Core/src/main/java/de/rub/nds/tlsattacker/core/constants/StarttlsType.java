@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.constants;
 
 public enum StarttlsType {
@@ -16,8 +17,8 @@ public enum StarttlsType {
     SMTP("220");
 
     /**
-     * This string is used to identify if the server accepted a STARTTLS command. If it is present
-     * in the response we believe that the server supports starttls.
+     * This string is used to identify if the server accepted a STARTTLS command. If it is present in the response we
+     * believe that the server supports starttls.
      */
     private String negotiatationString;
 
@@ -28,4 +29,5 @@ public enum StarttlsType {
     public String getNegotiatationString() {
         return negotiatationString;
     }
+
 }

@@ -1,18 +1,22 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.constants;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/** Alert level */
+/**
+ * Alert level
+ */
 public enum AlertLevel {
+
     UNDEFINED((byte) 0),
     WARNING((byte) 1),
     FATAL((byte) 2);
@@ -45,11 +49,12 @@ public enum AlertLevel {
     }
 
     public byte[] getArrayValue() {
-        return new byte[] {value};
+        return new byte[] { value };
     }
 
     @Override
     public String toString() {
         return "AlertLevel{" + "value=" + this.name() + '}';
     }
+
 }

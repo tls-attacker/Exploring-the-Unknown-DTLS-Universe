@@ -1,33 +1,48 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.certificate;
 
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.modifiablevariable.util.UnformattedByteArrayAdapter;
 import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.*;
-import de.rub.nds.tlsattacker.core.crypto.keys.*;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomDHPrivateKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomDSAPrivateKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomDhPublicKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomDsaPublicKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomECPrivateKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomEcPublicKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomPrivateKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomPublicKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomRSAPrivateKey;
+import de.rub.nds.tlsattacker.core.crypto.keys.CustomRsaPublicKey;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
 import de.rub.nds.tlsattacker.core.util.CertificateUtils;
 import de.rub.nds.tlsattacker.core.workflow.chooser.Chooser;
 import de.rub.nds.tlsattacker.transport.ConnectionEndType;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlElements;
-import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Objects;
+import javax.crypto.Cipher;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElements;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -52,22 +67,16 @@ public class CertificateKeyPair implements Serializable {
     @XmlJavaTypeAdapter(UnformattedByteArrayAdapter.class)
     private final byte[] certificateBytes;
 
-    @XmlElements(
-            value = {
-                @XmlElement(type = CustomDhPublicKey.class, name = "DhPublicKey"),
-                @XmlElement(type = CustomDsaPublicKey.class, name = "DsaPublicKey"),
-                @XmlElement(type = CustomRsaPublicKey.class, name = "RsaPublicKey"),
-                @XmlElement(type = CustomEcPublicKey.class, name = "EcPublicKey")
-            })
+    @XmlElements(value = { @XmlElement(type = CustomDhPublicKey.class, name = "DhPublicKey"),
+        @XmlElement(type = CustomDsaPublicKey.class, name = "DsaPublicKey"),
+        @XmlElement(type = CustomRsaPublicKey.class, name = "RsaPublicKey"),
+        @XmlElement(type = CustomEcPublicKey.class, name = "EcPublicKey") })
     private final CustomPublicKey publicKey;
 
-    @XmlElements(
-            value = {
-                @XmlElement(type = CustomDHPrivateKey.class, name = "DhPrivateKey"),
-                @XmlElement(type = CustomDSAPrivateKey.class, name = "DsaPrivateKey"),
-                @XmlElement(type = CustomRSAPrivateKey.class, name = "RsaPrivateKey"),
-                @XmlElement(type = CustomECPrivateKey.class, name = "EcPrivateKey")
-            })
+    @XmlElements(value = { @XmlElement(type = CustomDHPrivateKey.class, name = "DhPrivateKey"),
+        @XmlElement(type = CustomDSAPrivateKey.class, name = "DsaPrivateKey"),
+        @XmlElement(type = CustomRSAPrivateKey.class, name = "RsaPrivateKey"),
+        @XmlElement(type = CustomECPrivateKey.class, name = "EcPrivateKey") })
     private final CustomPrivateKey privateKey;
 
     private final NamedGroup signatureGroup;
@@ -86,14 +95,9 @@ public class CertificateKeyPair implements Serializable {
         this.signatureAndHashAlgorithm = null;
     }
 
-    public CertificateKeyPair(
-            CertificateKeyType certPublicKeyType,
-            CertificateKeyType certSignatureType,
-            byte[] certificateBytes,
-            CustomPublicKey publicKey,
-            CustomPrivateKey privateKey,
-            NamedGroup signatureGroup,
-            NamedGroup publicKeyGroup) {
+    public CertificateKeyPair(CertificateKeyType certPublicKeyType, CertificateKeyType certSignatureType,
+        byte[] certificateBytes, CustomPublicKey publicKey, CustomPrivateKey privateKey, NamedGroup signatureGroup,
+        NamedGroup publicKeyGroup) {
         this.certPublicKeyType = certPublicKeyType;
         this.certSignatureType = certSignatureType;
         this.certificateBytes = certificateBytes;
@@ -113,12 +117,10 @@ public class CertificateKeyPair implements Serializable {
         cert.encode(stream);
         this.certificateBytes = stream.toByteArray();
         this.privateKey = CertificateUtils.parseCustomPrivateKey(key);
-        this.publicKey =
-                CertificateUtils.parseCustomPublicKey(CertificateUtils.parsePublicKey(cert));
+        this.publicKey = CertificateUtils.parseCustomPublicKey(CertificateUtils.parsePublicKey(cert));
         this.publicKeyGroup = getPublicNamedGroup(cert);
         this.signatureGroup = getSignatureNamedGroup(cert);
-        if (certPublicKeyType == CertificateKeyType.GOST01
-                || certPublicKeyType == CertificateKeyType.GOST12) {
+        if (certPublicKeyType == CertificateKeyType.GOST01 || certPublicKeyType == CertificateKeyType.GOST12) {
             gostCurve = getGostCurve(cert);
         } else {
             gostCurve = null;
@@ -137,12 +139,10 @@ public class CertificateKeyPair implements Serializable {
         }
         this.certificateBytes = stream.toByteArray();
         this.privateKey = null;
-        this.publicKey =
-                CertificateUtils.parseCustomPublicKey(CertificateUtils.parsePublicKey(cert));
+        this.publicKey = CertificateUtils.parseCustomPublicKey(CertificateUtils.parsePublicKey(cert));
         this.publicKeyGroup = getPublicNamedGroup(cert);
         this.signatureGroup = getSignatureNamedGroup(cert);
-        if (certPublicKeyType == CertificateKeyType.GOST01
-                || certPublicKeyType == CertificateKeyType.GOST12) {
+        if (certPublicKeyType == CertificateKeyType.GOST01 || certPublicKeyType == CertificateKeyType.GOST12) {
             gostCurve = getGostCurve(cert);
         } else {
             gostCurve = null;
@@ -154,14 +154,11 @@ public class CertificateKeyPair implements Serializable {
         this.certSignatureType = CertificateKeyType.RSA;
         // To get the same output as cert.encode() but using the raw bytes
         // pack them accordingly
-        this.certificateBytes =
-                ArrayConverter.concatenate(
-                        ArrayConverter.intToBytes(
-                                certificateBytes.length + HandshakeByteLength.CERTIFICATES_LENGTH,
-                                HandshakeByteLength.CERTIFICATES_LENGTH),
-                        ArrayConverter.intToBytes(
-                                certificateBytes.length, HandshakeByteLength.CERTIFICATES_LENGTH),
-                        certificateBytes);
+        this.certificateBytes = ArrayConverter.concatenate(
+            ArrayConverter.intToBytes(certificateBytes.length + HandshakeByteLength.CERTIFICATES_LENGTH,
+                HandshakeByteLength.CERTIFICATES_LENGTH),
+            ArrayConverter.intToBytes(certificateBytes.length, HandshakeByteLength.CERTIFICATES_LENGTH),
+            certificateBytes);
         this.publicKeyGroup = null;
         this.signatureGroup = null;
         gostCurve = null;
@@ -170,8 +167,7 @@ public class CertificateKeyPair implements Serializable {
         this.signatureAndHashAlgorithm = getSignatureAndHashAlgorithmFromBytes(certificateBytes);
     }
 
-    public CertificateKeyPair(Certificate cert, PrivateKey privateKey, PublicKey publicKey)
-            throws IOException {
+    public CertificateKeyPair(Certificate cert, PrivateKey privateKey, PublicKey publicKey) throws IOException {
         this.certPublicKeyType = getPublicKeyType(cert);
         this.certSignatureType = getSignatureType(cert);
         this.signatureAndHashAlgorithm = getSignatureAndHashAlgorithmFromCert(cert);
@@ -180,8 +176,7 @@ public class CertificateKeyPair implements Serializable {
         this.certificateBytes = stream.toByteArray();
         this.publicKeyGroup = getPublicNamedGroup(cert);
         this.signatureGroup = getSignatureNamedGroup(cert);
-        if (certPublicKeyType == CertificateKeyType.GOST01
-                || certPublicKeyType == CertificateKeyType.GOST12) {
+        if (certPublicKeyType == CertificateKeyType.GOST01 || certPublicKeyType == CertificateKeyType.GOST12) {
             gostCurve = getGostCurve(cert);
         } else {
             gostCurve = null;
@@ -190,24 +185,18 @@ public class CertificateKeyPair implements Serializable {
         this.publicKey = CertificateUtils.parseCustomPublicKey(publicKey);
     }
 
-    public CertificateKeyPair(
-            CertificateKeyType certPublicKeyType,
-            CertificateKeyType certSignatureType,
-            File certFile,
-            File privateKeyFile)
-            throws CertificateException, IOException {
+    public CertificateKeyPair(CertificateKeyType certPublicKeyType, CertificateKeyType certSignatureType, File certFile,
+        File privateKeyFile) throws CertificateException, IOException {
         this.certPublicKeyType = certPublicKeyType;
         this.certSignatureType = certSignatureType;
         Certificate certificate = PemUtil.readCertificate(certFile);
         this.publicKey = CertificateUtils.parseCustomPublicKey(PemUtil.readPublicKey(certFile));
-        this.privateKey =
-                CertificateUtils.parseCustomPrivateKey(PemUtil.readPrivateKey(privateKeyFile));
+        this.privateKey = CertificateUtils.parseCustomPrivateKey(PemUtil.readPrivateKey(privateKeyFile));
         certificateBytes = certificate.getCertificateAt(0).getEncoded();
         signatureGroup = getSignatureNamedGroup(certificate);
         publicKeyGroup = getPublicNamedGroup(certificate);
         this.signatureAndHashAlgorithm = getSignatureAndHashAlgorithmFromCert(certificate);
-        if (certPublicKeyType == CertificateKeyType.GOST01
-                || certPublicKeyType == CertificateKeyType.GOST12) {
+        if (certPublicKeyType == CertificateKeyType.GOST01 || certPublicKeyType == CertificateKeyType.GOST12) {
             gostCurve = getGostCurve(certificate);
         } else {
             gostCurve = null;
@@ -218,8 +207,7 @@ public class CertificateKeyPair implements Serializable {
         if (cert.isEmpty()) {
             throw new IllegalArgumentException("Empty CertChain provided!");
         }
-        AlgorithmIdentifier algorithm =
-                cert.getCertificateAt(0).getSubjectPublicKeyInfo().getAlgorithm();
+        AlgorithmIdentifier algorithm = cert.getCertificateAt(0).getSubjectPublicKeyInfo().getAlgorithm();
         switch (algorithm.getAlgorithm().getId()) {
             case "1.2.840.113549.1.1.1":
                 return CertificateKeyType.RSA;
@@ -242,10 +230,7 @@ public class CertificateKeyPair implements Serializable {
             case "1.2.643.7.1.1.1.2":
                 return CertificateKeyType.GOST12;
             default:
-                LOGGER.warn(
-                        "Unknown algorithm ID: "
-                                + algorithm.getAlgorithm().getId()
-                                + " using \"NONE\"");
+                LOGGER.warn("Unknown algorithm ID: " + algorithm.getAlgorithm().getId() + " using \"NONE\"");
                 return CertificateKeyType.NONE;
         }
     }
@@ -258,11 +243,8 @@ public class CertificateKeyPair implements Serializable {
         if (cert.isEmpty()) {
             throw new IllegalArgumentException("Empty CertChain provided!");
         }
-        AlgorithmIdentifier algorithmIdentifier =
-                cert.getCertificateAt(0).getSubjectPublicKeyInfo().getAlgorithm();
-        switch (((ASN1ObjectIdentifier)
-                        ((ASN1Sequence) algorithmIdentifier.getParameters()).getObjectAt(0))
-                .getId()) {
+        AlgorithmIdentifier algorithmIdentifier = cert.getCertificateAt(0).getSubjectPublicKeyInfo().getAlgorithm();
+        switch (((ASN1ObjectIdentifier) ((ASN1Sequence) algorithmIdentifier.getParameters()).getObjectAt(0)).getId()) {
             case "1.2.643.2.2.35.1":
                 return GOSTCurve.GostR3410_2001_CryptoPro_A;
             case "1.2.643.2.2.35.2":
@@ -290,10 +272,9 @@ public class CertificateKeyPair implements Serializable {
         if (cert.isEmpty()) {
             throw new IllegalArgumentException("Empty CertChain provided!");
         }
-        String algorithmOid =
-                cert.getCertificateAt(0).getSignatureAlgorithm().getAlgorithm().getId();
+        String algorithmOid = cert.getCertificateAt(0).getSignatureAlgorithm().getAlgorithm().getId();
         switch (algorithmOid) {
-                // RSA
+            // RSA
             case "1.2.840.113549.1.1.4":
                 return SignatureAndHashAlgorithm.RSA_MD5;
             case "1.2.840.113549.1.1.5":
@@ -306,7 +287,7 @@ public class CertificateKeyPair implements Serializable {
                 return SignatureAndHashAlgorithm.RSA_SHA512;
             case "1.2.840.113549.1.1.14":
                 return SignatureAndHashAlgorithm.RSA_SHA224;
-                // ECDSA
+            // ECDSA
             case "1.2.840.10045.4.1":
                 return SignatureAndHashAlgorithm.ECDSA_SHA1;
             case "1.2.840.10045.4.3.1":
@@ -317,7 +298,7 @@ public class CertificateKeyPair implements Serializable {
                 return SignatureAndHashAlgorithm.ECDSA_SHA384;
             case "1.2.840.10045.4.3.4":
                 return SignatureAndHashAlgorithm.ECDSA_SHA512;
-                // DSS
+            // DSS
             case "1.2.840.10040.4.3":
                 return SignatureAndHashAlgorithm.DSA_SHA1;
             case "2.16.840.1.101.3.4.3.1":
@@ -328,7 +309,7 @@ public class CertificateKeyPair implements Serializable {
                 return SignatureAndHashAlgorithm.DSA_SHA384;
             case "2.16.840.1.101.3.4.3.4":
                 return SignatureAndHashAlgorithm.DSA_SHA512;
-                // GOST
+            // GOST
             case "1.2.643.2.2.3":
                 return SignatureAndHashAlgorithm.GOSTR34102001_GOSTR3411;
             case "1.2.643.7.1.1.3.2":
@@ -341,8 +322,7 @@ public class CertificateKeyPair implements Serializable {
         }
     }
 
-    private SignatureAndHashAlgorithm getSignatureAndHashAlgorithmFromBytes(
-            byte[] certificateBytes) {
+    private SignatureAndHashAlgorithm getSignatureAndHashAlgorithmFromBytes(byte[] certificateBytes) {
         try {
             Certificate cert = Certificate.parse(new ByteArrayInputStream(certificateBytes));
             return getSignatureAndHashAlgorithmFromCert(cert);
@@ -377,10 +357,7 @@ public class CertificateKeyPair implements Serializable {
             case "1.2.643.7.1.1.3.3":
                 return CertificateKeyType.GOST12;
             default:
-                LOGGER.warn(
-                        "Unknown algorithm ID: "
-                                + algorithm.getAlgorithm().getId()
-                                + " using \"NONE\"");
+                LOGGER.warn("Unknown algorithm ID: " + algorithm.getAlgorithm().getId() + " using \"NONE\"");
                 return CertificateKeyType.NONE;
         }
     }
@@ -390,8 +367,7 @@ public class CertificateKeyPair implements Serializable {
             throw new IllegalArgumentException("Empty CertChain provided!");
         }
         if (!(publicKey instanceof CustomEcPublicKey)
-                || (certSignatureType != CertificateKeyType.ECDH
-                        && certSignatureType != CertificateKeyType.ECDSA)) {
+            || (certSignatureType != CertificateKeyType.ECDH && certSignatureType != CertificateKeyType.ECDSA)) {
             return null;
         }
         if (((CustomEcPublicKey) publicKey).getGostCurve() != null) {
@@ -403,12 +379,8 @@ public class CertificateKeyPair implements Serializable {
         // the signature group is
         // the same as for the public key
         try {
-            ASN1ObjectIdentifier publicKeyParameters =
-                    (ASN1ObjectIdentifier)
-                            cert.getCertificateAt(0)
-                                    .getSubjectPublicKeyInfo()
-                                    .getAlgorithm()
-                                    .getParameters();
+            ASN1ObjectIdentifier publicKeyParameters = (ASN1ObjectIdentifier) cert.getCertificateAt(0)
+                .getSubjectPublicKeyInfo().getAlgorithm().getParameters();
             return NamedGroup.fromJavaName(ECNamedCurveTable.getName(publicKeyParameters));
         } catch (Exception ex) {
             LOGGER.warn("Could not determine EC public key group", ex);
@@ -427,12 +399,8 @@ public class CertificateKeyPair implements Serializable {
             return null;
         }
         try {
-            ASN1ObjectIdentifier publicKeyParameters =
-                    (ASN1ObjectIdentifier)
-                            cert.getCertificateAt(0)
-                                    .getSubjectPublicKeyInfo()
-                                    .getAlgorithm()
-                                    .getParameters();
+            ASN1ObjectIdentifier publicKeyParameters = (ASN1ObjectIdentifier) cert.getCertificateAt(0)
+                .getSubjectPublicKeyInfo().getAlgorithm().getParameters();
             return NamedGroup.fromJavaName(ECNamedCurveTable.getName(publicKeyParameters));
         } catch (Exception ex) {
             LOGGER.warn("Could not determine EC public key group", ex);
@@ -487,35 +455,33 @@ public class CertificateKeyPair implements Serializable {
         }
     }
 
-    public void adjustInContext(TlsContext tlsContext, ConnectionEndType connectionEnd) {
-        if (tlsContext.getSelectedProtocolVersion() != ProtocolVersion.TLS13) {
-            publicKey.adjustInContext(tlsContext, connectionEnd);
+    public void adjustInContext(TlsContext context, ConnectionEndType connectionEnd) {
+        if (context.getSelectedProtocolVersion() != ProtocolVersion.TLS13) {
+            publicKey.adjustInContext(context, connectionEnd);
         }
         if (privateKey != null) {
-            privateKey.adjustInContext(tlsContext, connectionEnd);
+            privateKey.adjustInContext(context, connectionEnd);
         }
-        if (!tlsContext.getChooser().getSelectedCipherSuite().isTLS13()
-                && AlgorithmResolver.getCertificateKeyType(
-                                tlsContext.getChooser().getSelectedCipherSuite())
-                        == CertificateKeyType.ECDH) {
-            tlsContext.setSelectedGroup(publicKeyGroup);
+        if (!context.getChooser().getSelectedCipherSuite().isTLS13()
+            && AlgorithmResolver.getCertificateKeyType(context.getChooser().getSelectedCipherSuite())
+                == CertificateKeyType.ECDH) {
+            context.setSelectedGroup(publicKeyGroup);
         } else {
-            tlsContext.setEcCertificateCurve(publicKeyGroup);
+            context.setEcCertificateCurve(publicKeyGroup);
         }
-        tlsContext.setEcCertificateSignatureCurve(signatureGroup);
-        if (tlsContext.getConfig().getAutoAdjustSignatureAndHashAlgorithm()) {
-            SignatureAndHashAlgorithm sigHashAlgo =
-                    SignatureAndHashAlgorithm.forCertificateKeyPair(this, tlsContext.getChooser());
+        context.setEcCertificateSignatureCurve(signatureGroup);
+        if (context.getConfig().getAutoAdjustSignatureAndHashAlgorithm()) {
+            SignatureAndHashAlgorithm sigHashAlgo = this.getSignatureAndHashAlgorithm();
 
             if (sigHashAlgo == SignatureAndHashAlgorithm.GOSTR34102012_512_GOSTR34112012_512
-                    || sigHashAlgo == SignatureAndHashAlgorithm.GOSTR34102012_256_GOSTR34112012_256
-                    || sigHashAlgo == SignatureAndHashAlgorithm.GOSTR34102001_GOSTR3411) {
-                tlsContext.setSelectedGostCurve(gostCurve);
+                || sigHashAlgo == SignatureAndHashAlgorithm.GOSTR34102012_256_GOSTR34112012_256
+                || sigHashAlgo == SignatureAndHashAlgorithm.GOSTR34102001_GOSTR3411) {
+                context.setSelectedGostCurve(gostCurve);
                 LOGGER.debug("Adjusting selected GOST curve:" + gostCurve);
             }
 
             LOGGER.debug("Setting selected SignatureAndHash algorithm to:" + sigHashAlgo);
-            tlsContext.setSelectedSignatureAndHashAlgorithm(sigHashAlgo);
+            context.setSelectedSignatureAndHashAlgorithm(sigHashAlgo);
         }
     }
 
@@ -576,68 +542,31 @@ public class CertificateKeyPair implements Serializable {
 
     @Override
     public String toString() {
-        return "CertificateKeyPair{"
-                + "certPublicKeyType="
-                + certPublicKeyType
-                + ", certSignatureType="
-                + certSignatureType
-                + ", certificateBytes="
-                + Arrays.toString(certificateBytes)
-                + ", publicKey="
-                + publicKey
-                + ", privateKey="
-                + privateKey
-                + ", signatureGroup="
-                + signatureGroup
-                + ", publicKeyGroup="
-                + publicKeyGroup
-                + '}';
+        return "CertificateKeyPair{" + "certPublicKeyType=" + certPublicKeyType + ", certSignatureType="
+            + certSignatureType + ", certificateBytes=" + Arrays.toString(certificateBytes) + ", publicKey=" + publicKey
+            + ", privateKey=" + privateKey + ", signatureGroup=" + signatureGroup + ", publicKeyGroup=" + publicKeyGroup
+            + '}';
     }
 
     public boolean isCompatibleWithCipherSuite(Chooser chooser) {
         CipherSuite cipherSuite = chooser.getSelectedCipherSuite();
-        if (!cipherSuite.isRealCipherSuite()
-                || cipherSuite == CipherSuite.TLS_NULL_WITH_NULL_NULL
-                || (cipherSuite.isTLS13() && !combinationUnsuitedForTls13(chooser))) {
+        if (cipherSuite.isTLS13() || !cipherSuite.isRealCipherSuite()) {
             return true;
-        } else if (cipherSuite.isTLS13() && combinationUnsuitedForTls13(chooser)) {
-            return false;
         }
 
         CertificateKeyType neededKeyType = AlgorithmResolver.getCertificateKeyType(cipherSuite);
-        SignatureAlgorithm requiredSignatureAlgorithm =
-                AlgorithmResolver.getRequiredSignatureAlgorithm(cipherSuite);
-        CertificateKeyType legacyNeededCertSignatureKeyType = null;
-        if (requiredSignatureAlgorithm != null) {
-            legacyNeededCertSignatureKeyType =
-                    requiredSignatureAlgorithm.getRequiredCertificateKeyType();
-        }
+        SignatureAlgorithm neededSignatureAlgorithm = AlgorithmResolver.getRequiredSignatureAlgorithm(cipherSuite);
 
         if (neededKeyType == this.getCertPublicKeyType()
-                || (neededKeyType == CertificateKeyType.ECDSA
-                        && getCertPublicKeyType() == CertificateKeyType.ECDH)) {
-
-            if (cipherSuite.isEphemeral()
-                    || mayUseArbitraryCertSignature(chooser)
-                    || legacyNeededCertSignatureKeyType == null
-                    || legacyNeededCertSignatureKeyType == getCertSignatureType()) {
+            || (neededKeyType == CertificateKeyType.ECDSA && getCertPublicKeyType() == CertificateKeyType.ECDH)) {
+            ProtocolVersion selectedVersion = chooser.getSelectedProtocolVersion();
+            // ensure cert is signed with matching algorithm if version < TLS 1.2
+            if ((selectedVersion != ProtocolVersion.SSL3 && selectedVersion != ProtocolVersion.TLS10
+                && selectedVersion != ProtocolVersion.TLS11 && selectedVersion != ProtocolVersion.DTLS10)
+                || neededSignatureAlgorithm == getSignatureAlgorithm()) {
                 return true;
             }
         }
         return false;
-    }
-
-    private boolean mayUseArbitraryCertSignature(Chooser chooser) {
-        ProtocolVersion selectedVersion = chooser.getSelectedProtocolVersion();
-        return (selectedVersion != ProtocolVersion.SSL3
-                && selectedVersion != ProtocolVersion.TLS10
-                && selectedVersion != ProtocolVersion.TLS11
-                && selectedVersion != ProtocolVersion.DTLS10);
-    }
-
-    public boolean combinationUnsuitedForTls13(Chooser chooser) {
-        return SignatureAndHashAlgorithm.forCertificateKeyPair(this, chooser, true) == null
-                || !SignatureAndHashAlgorithm.forCertificateKeyPair(this, chooser, true)
-                        .suitedForSigningTls13Messages();
     }
 }

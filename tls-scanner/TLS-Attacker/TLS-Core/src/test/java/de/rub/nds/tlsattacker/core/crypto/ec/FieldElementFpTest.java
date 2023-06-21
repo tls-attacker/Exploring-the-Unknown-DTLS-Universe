@@ -1,18 +1,20 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.crypto.ec;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.math.BigInteger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.Test;
 
 public class FieldElementFpTest {
 
@@ -23,7 +25,7 @@ public class FieldElementFpTest {
     private FieldElementFp e4;
     private FieldElementFp zero;
 
-    @BeforeEach
+    @Before
     public void setUp() {
         modulus = new BigInteger("113");
         e1 = new FieldElementFp(new BigInteger("57"), modulus);
@@ -92,7 +94,11 @@ public class FieldElementFpTest {
         result = new FieldElementFp(new BigInteger("1881"), modulus);
         assertEquals(result, tmp);
 
-        assertThrows(ArithmeticException.class, () -> e1.divide(zero));
+        try {
+            e1.divide(zero);
+            fail();
+        } catch (ArithmeticException e) {
+        }
     }
 
     @Test
@@ -108,7 +114,11 @@ public class FieldElementFpTest {
         FieldElementFp result = new FieldElementFp(new BigInteger("33"), modulus);
         assertEquals(result, tmp);
 
-        assertThrows(ArithmeticException.class, () -> zero.multInv());
+        try {
+            zero.multInv();
+            fail();
+        } catch (ArithmeticException e) {
+        }
     }
 
     @Test
@@ -127,4 +137,5 @@ public class FieldElementFpTest {
         e1_ = new FieldElementFp(e1Data.add(BigInteger.ONE), modulus.add(BigInteger.ONE));
         assertNotEquals(e1, e1_);
     }
+
 }

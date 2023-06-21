@@ -1,31 +1,42 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.serializer.extension;
 
+import de.rub.nds.modifiablevariable.util.ArrayConverter;
+import de.rub.nds.tlsattacker.core.constants.ExtensionType;
+import de.rub.nds.tlsattacker.core.constants.UserMappingExtensionHintType;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.UserMappingExtensionMessage;
-import de.rub.nds.tlsattacker.core.protocol.parser.extension.UserMappingExtensionParserTest;
-import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+import static org.junit.Assert.assertArrayEquals;
+import org.junit.Before;
+import org.junit.Test;
 
-public class UserMappingExtensionSerializerTest
-        extends AbstractExtensionMessageSerializerTest<
-                UserMappingExtensionMessage, UserMappingExtensionSerializer> {
+public class UserMappingExtensionSerializerTest {
+    private final ExtensionType extensionType = ExtensionType.USER_MAPPING;
+    private final byte[] extensionBytes = ArrayConverter.hexStringToByteArray("0006000140");
+    private final int extensionLength = 1;
+    private final UserMappingExtensionHintType hintType = UserMappingExtensionHintType.UPN_DOMAIN_HINT;
+    private UserMappingExtensionSerializer serializer;
+    private UserMappingExtensionMessage msg;
 
-    public UserMappingExtensionSerializerTest() {
-        super(
-                UserMappingExtensionMessage::new,
-                UserMappingExtensionSerializer::new,
-                List.of((msg, obj) -> msg.setUserMappingType((Byte) obj)));
+    @Before
+    public void setUp() {
+        msg = new UserMappingExtensionMessage();
+        serializer = new UserMappingExtensionSerializer(msg);
     }
 
-    public static Stream<Arguments> provideTestVectors() {
-        return UserMappingExtensionParserTest.provideTestVectors();
+    @Test
+    public void testSerializeExtensionContent() {
+        msg.setExtensionType(extensionType.getValue());
+        msg.setExtensionLength(extensionLength);
+        msg.setUserMappingType(hintType.getValue());
+
+        assertArrayEquals(extensionBytes, serializer.serialize());
     }
 }

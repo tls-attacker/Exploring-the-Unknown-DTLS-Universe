@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.preparator;
 
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
@@ -17,6 +18,7 @@ import de.rub.nds.tlsattacker.core.crypto.ec.Point;
 import de.rub.nds.tlsattacker.core.crypto.ec.PointFormatter;
 import de.rub.nds.tlsattacker.core.crypto.gost.GOST28147WrapEngine;
 import de.rub.nds.tlsattacker.core.crypto.gost.TLSGostKeyTransportBlob;
+import de.rub.nds.tlsattacker.core.exceptions.WorkflowExecutionException;
 import de.rub.nds.tlsattacker.core.protocol.message.GOSTClientKeyExchangeMessage;
 import de.rub.nds.tlsattacker.core.util.GOSTUtils;
 import de.rub.nds.tlsattacker.core.workflow.chooser.Chooser;
@@ -46,15 +48,14 @@ import org.bouncycastle.crypto.params.ParametersWithSBox;
 import org.bouncycastle.crypto.params.ParametersWithUKM;
 
 public abstract class GOSTClientKeyExchangePreparator
-        extends ClientKeyExchangePreparator<GOSTClientKeyExchangeMessage> {
+    extends ClientKeyExchangePreparator<GOSTClientKeyExchangeMessage> {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static Map<ASN1ObjectIdentifier, String> oidMappings = new HashMap<>();
 
     static {
-        oidMappings.put(
-                CryptoProObjectIdentifiers.id_Gost28147_89_CryptoPro_TestParamSet, "E-TEST");
+        oidMappings.put(CryptoProObjectIdentifiers.id_Gost28147_89_CryptoPro_TestParamSet, "E-TEST");
         oidMappings.put(CryptoProObjectIdentifiers.id_Gost28147_89_CryptoPro_A_ParamSet, "E-A");
         oidMappings.put(CryptoProObjectIdentifiers.id_Gost28147_89_CryptoPro_B_ParamSet, "E-B");
         oidMappings.put(CryptoProObjectIdentifiers.id_Gost28147_89_CryptoPro_C_ParamSet, "E-C");
@@ -87,69 +88,58 @@ public abstract class GOSTClientKeyExchangePreparator
                 preparePms();
                 msg.getComputations().setPrivateKey(chooser.getClientEcPrivateKey());
                 prepareEphemeralKey();
-                prepareKek(
-                        msg.getComputations().getPrivateKey().getValue(),
-                        chooser.getServerEcPublicKey());
+                prepareKek(msg.getComputations().getPrivateKey().getValue(), chooser.getServerEcPublicKey());
                 prepareEncryptionParams();
                 prepareCek();
                 prepareKeyBlob();
             } else {
                 TLSGostKeyTransportBlob transportBlob =
-                        TLSGostKeyTransportBlob.getInstance(msg.getKeyTransportBlob().getValue());
-                LOGGER.debug(
-                        "Received GOST key blob: " + ASN1Dump.dumpAsString(transportBlob, true));
+                    TLSGostKeyTransportBlob.getInstance(msg.getKeyTransportBlob().getValue());
+                LOGGER.debug("Received GOST key blob: " + ASN1Dump.dumpAsString(transportBlob, true));
 
                 GostR3410KeyTransport keyBlob = transportBlob.getKeyBlob();
-                if (!Arrays.equals(
-                        keyBlob.getTransportParameters().getUkm(),
-                        msg.getComputations().getUkm().getValue())) {
+                if (!Arrays.equals(keyBlob.getTransportParameters().getUkm(),
+                    msg.getComputations().getUkm().getValue())) {
                     LOGGER.warn("Client UKM != Server UKM");
                 }
 
-                SubjectPublicKeyInfo ephemeralKey =
-                        keyBlob.getTransportParameters().getEphemeralPublicKey();
+                SubjectPublicKeyInfo ephemeralKey = keyBlob.getTransportParameters().getEphemeralPublicKey();
                 Point publicKey = chooser.getClientEcPublicKey();
 
                 prepareKek(chooser.getServerEcPrivateKey(), publicKey);
 
-                byte[] wrapped =
-                        ArrayConverter.concatenate(
-                                keyBlob.getSessionEncryptedKey().getEncryptedKey(),
-                                keyBlob.getSessionEncryptedKey().getMacKey());
+                byte[] wrapped = ArrayConverter.concatenate(keyBlob.getSessionEncryptedKey().getEncryptedKey(),
+                    keyBlob.getSessionEncryptedKey().getMacKey());
 
-                String sboxName =
-                        oidMappings.get(keyBlob.getTransportParameters().getEncryptionParamSet());
+                String sboxName = oidMappings.get(keyBlob.getTransportParameters().getEncryptionParamSet());
                 byte[] pms = wrap(false, wrapped, sboxName);
                 msg.getComputations().setPremasterSecret(pms);
             }
         } catch (Exception e) {
-            throw new UnsupportedOperationException("Could not prepare the key agreement!", e);
+            throw new WorkflowExecutionException("Could not prepare the key agreement!", e);
         }
     }
 
     private void prepareClientServerRandom() {
-        byte[] random =
-                ArrayConverter.concatenate(chooser.getClientRandom(), chooser.getServerRandom());
+        byte[] random = ArrayConverter.concatenate(chooser.getClientRandom(), chooser.getServerRandom());
         msg.getComputations().setClientServerRandom(random);
-        LOGGER.debug(
-                "ClientServerRandom: {}", msg.getComputations().getClientServerRandom().getValue());
+        LOGGER.debug("ClientServerRandom: "
+            + ArrayConverter.bytesToHexString(msg.getComputations().getClientServerRandom().getValue()));
     }
 
     private void prepareUkm() throws NoSuchAlgorithmException {
-        DigestAlgorithm digestAlgorithm =
-                AlgorithmResolver.getDigestAlgorithm(
-                        chooser.getSelectedProtocolVersion(), chooser.getSelectedCipherSuite());
+        DigestAlgorithm digestAlgorithm = AlgorithmResolver.getDigestAlgorithm(chooser.getSelectedProtocolVersion(),
+            chooser.getSelectedCipherSuite());
         MessageDigest digest = MessageDigest.getInstance(digestAlgorithm.getJavaName());
         byte[] hash = digest.digest(msg.getComputations().getClientServerRandom().getValue());
 
         byte[] ukm = new byte[8];
         System.arraycopy(hash, 0, ukm, 0, ukm.length);
         msg.getComputations().setUkm(ukm);
-        LOGGER.debug("UKM: {}", msg.getComputations().getUkm());
+        LOGGER.debug("UKM: " + ArrayConverter.bytesToHexString(msg.getComputations().getUkm()));
     }
 
-    private void prepareKek(BigInteger privateKey, Point publicKey)
-            throws GeneralSecurityException {
+    private void prepareKek(BigInteger privateKey, Point publicKey) throws GeneralSecurityException {
         EllipticCurve curve = CurveFactory.getCurve(chooser.getSelectedGostCurve());
         Point sharedPoint = curve.mult(privateKey, publicKey);
         if (sharedPoint == null) {
@@ -162,17 +152,17 @@ public abstract class GOSTClientKeyExchangePreparator
         byte[] kek = new byte[digest.getDigestSize()];
         digest.doFinal(kek, 0);
         msg.getComputations().setKeyEncryptionKey(kek);
-        LOGGER.debug("KEK: {}", msg.getComputations().getKeyEncryptionKey());
+        LOGGER.debug("KEK: " + ArrayConverter.bytesToHexString(msg.getComputations().getKeyEncryptionKey()));
     }
 
     private void preparePms() {
-        byte[] pms = chooser.getContext().getTlsContext().getPreMasterSecret();
+        byte[] pms = chooser.getContext().getPreMasterSecret();
         if (pms != null) {
             LOGGER.debug("Using preset PreMasterSecret from context.");
         } else {
             LOGGER.debug("Generating random PreMasterSecret.");
             pms = new byte[32];
-            chooser.getContext().getTlsContext().getRandom().nextBytes(pms);
+            chooser.getContext().getRandom().nextBytes(pms);
         }
 
         msg.getComputations().setPremasterSecret(pms);
@@ -182,57 +172,48 @@ public abstract class GOSTClientKeyExchangePreparator
         EllipticCurve curve = CurveFactory.getCurve(chooser.getSelectedGostCurve());
         LOGGER.debug("Using key from context.");
         msg.getComputations().setPrivateKey(chooser.getClientEcPrivateKey());
-        Point publicKey =
-                curve.mult(msg.getComputations().getPrivateKey().getValue(), curve.getBasePoint());
+        Point publicKey = curve.mult(msg.getComputations().getPrivateKey().getValue(), curve.getBasePoint());
         msg.getComputations().setClientPublicKey(publicKey);
+
     }
 
     private byte[] wrap(boolean wrap, byte[] bytes, String sboxName) {
         try {
             byte[] sbox = GOST28147Engine.getSBox(sboxName);
-            KeyParameter keySpec =
-                    new KeyParameter(msg.getComputations().getKeyEncryptionKey().getValue());
+            KeyParameter keySpec = new KeyParameter(msg.getComputations().getKeyEncryptionKey().getValue());
             ParametersWithSBox withSBox = new ParametersWithSBox(keySpec, sbox);
-            ParametersWithUKM withIV =
-                    new ParametersWithUKM(withSBox, msg.getComputations().getUkm().getValue());
+            ParametersWithUKM withIV = new ParametersWithUKM(withSBox, msg.getComputations().getUkm().getValue());
 
             GOST28147WrapEngine cipher = new GOST28147WrapEngine();
             cipher.init(wrap, withIV);
             byte[] result;
             try {
                 if (wrap) {
-                    LOGGER.debug("Wrapping GOST PMS: {}", bytes);
+                    LOGGER.debug("Wrapping GOST PMS: " + ArrayConverter.bytesToHexString(bytes));
                     result = cipher.wrap(bytes, 0, bytes.length);
                 } else {
-                    LOGGER.debug("Unwrapping GOST PMS: {}", bytes);
+                    LOGGER.debug("Unwrapping GOST PMS: " + ArrayConverter.bytesToHexString(bytes));
                     result = cipher.unwrap(bytes, 0, bytes.length);
                 }
             } catch (IndexOutOfBoundsException ex) {
-                // TODO this is not so nice, but its honestly not worth fixing as gost is not used
-                // and this can only
+                // TODO this is not so nice, but its honestly not worth fixing as gost is not used and this can only
                 // happen
                 // during fuzzing
-                LOGGER.warn(
-                        "IndexOutOfBounds within GOST code. We catch this and return an empty byte array");
+                LOGGER.warn("IndexOutOfBounds within GOST code. We catch this and return an empty byte array");
                 result = new byte[0];
             }
-            LOGGER.debug("Wrap result: {}", result);
+            LOGGER.debug("Wrap result: " + ArrayConverter.bytesToHexString(result));
             return result;
         } catch (Exception E) {
-            if (E instanceof UnsupportedOperationException) {
-                throw E;
-            }
             LOGGER.warn("Could not wrap. Using byte[0]");
             return new byte[0];
         }
     }
 
     private void prepareCek() {
-        ASN1ObjectIdentifier param =
-                new ASN1ObjectIdentifier(msg.getComputations().getEncryptionParamSet().getValue());
+        ASN1ObjectIdentifier param = new ASN1ObjectIdentifier(msg.getComputations().getEncryptionParamSet().getValue());
         String sboxName = oidMappings.get(param);
-        byte[] wrapped =
-                wrap(true, msg.getComputations().getPremasterSecret().getValue(), sboxName);
+        byte[] wrapped = wrap(true, msg.getComputations().getPremasterSecret().getValue(), sboxName);
 
         byte[] cek = new byte[32];
         try {
@@ -262,27 +243,18 @@ public abstract class GOSTClientKeyExchangePreparator
 
     private void prepareKeyBlob() throws IOException {
         try {
-            Point ecPoint =
-                    Point.createPoint(
-                            msg.getComputations().getClientPublicKeyX().getValue(),
-                            msg.getComputations().getClientPublicKeyY().getValue(),
-                            chooser.getSelectedGostCurve());
-            SubjectPublicKeyInfo ephemeralKey =
-                    SubjectPublicKeyInfo.getInstance(
-                            GOSTUtils.generatePublicKey(chooser.getSelectedGostCurve(), ecPoint)
-                                    .getEncoded());
+            Point ecPoint = Point.createPoint(msg.getComputations().getClientPublicKeyX().getValue(),
+                msg.getComputations().getClientPublicKeyY().getValue(), chooser.getSelectedGostCurve());
+            SubjectPublicKeyInfo ephemeralKey = SubjectPublicKeyInfo
+                .getInstance(GOSTUtils.generatePublicKey(chooser.getSelectedGostCurve(), ecPoint).getEncoded());
 
             Gost2814789EncryptedKey encryptedKey =
-                    new Gost2814789EncryptedKey(
-                            msg.getComputations().getEncryptedKey().getValue(),
-                            getMaskKey(),
-                            msg.getComputations().getMacKey().getValue());
+                new Gost2814789EncryptedKey(msg.getComputations().getEncryptedKey().getValue(), getMaskKey(),
+                    msg.getComputations().getMacKey().getValue());
             ASN1ObjectIdentifier paramSet =
-                    new ASN1ObjectIdentifier(
-                            msg.getComputations().getEncryptionParamSet().getValue());
+                new ASN1ObjectIdentifier(msg.getComputations().getEncryptionParamSet().getValue());
             GostR3410TransportParameters params =
-                    new GostR3410TransportParameters(
-                            paramSet, ephemeralKey, msg.getComputations().getUkm().getValue());
+                new GostR3410TransportParameters(paramSet, ephemeralKey, msg.getComputations().getUkm().getValue());
             GostR3410KeyTransport transport = new GostR3410KeyTransport(encryptedKey, params);
             DERSequence proxyKeyBlobs = (DERSequence) DERSequence.getInstance(getProxyKeyBlobs());
             TLSGostKeyTransportBlob blob = new TLSGostKeyTransportBlob(transport, proxyKeyBlobs);

@@ -1,87 +1,96 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.config.delegate;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.ProtocolVersion;
 import de.rub.nds.tlsattacker.transport.TransportHandlerType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
-public class ProtocolVersionDelegateTest extends AbstractDelegateTest<ProtocolVersionDelegate> {
+public class ProtocolVersionDelegateTest {
 
-    @BeforeEach
+    private ProtocolVersionDelegate delegate;
+    private JCommander jcommander;
+    private String[] args;
+
+    @Before
     public void setUp() {
-        super.setUp(new ProtocolVersionDelegate());
+        this.delegate = new ProtocolVersionDelegate();
+        this.jcommander = new JCommander(delegate);
     }
 
-    /** Test of getProtocolVersion method, of class ProtocolVersionDelegate. */
+    /**
+     * Test of getProtocolVersion method, of class ProtocolVersionDelegate.
+     */
     @Test
     public void testGetProtocolVersion() {
-        String[] args = new String[2];
+        args = new String[2];
         args[0] = "-version";
         args[1] = "TLS12";
         delegate.setProtocolVersion(null);
-        assertNotSame(ProtocolVersion.TLS12, delegate.getProtocolVersion());
+        assertFalse(delegate.getProtocolVersion() == ProtocolVersion.TLS12);
         jcommander.parse(args);
-        assertSame(ProtocolVersion.TLS12, delegate.getProtocolVersion());
+        assertTrue(delegate.getProtocolVersion() == ProtocolVersion.TLS12);
     }
 
-    @Test
+    @Test(expected = ParameterException.class)
     public void testGetInvalidProtocolVersion() {
-        String[] args = new String[2];
+        args = new String[2];
         args[0] = "-version";
         args[1] = "NOTAPROTOCOLVERSION";
-        assertThrows(ParameterException.class, () -> jcommander.parse(args));
+        jcommander.parse(args);
     }
 
-    /** Test of setProtocolVersion method, of class ProtocolVersionDelegate. */
+    /**
+     * Test of setProtocolVersion method, of class ProtocolVersionDelegate.
+     */
     @Test
     public void testSetProtocolVersion() {
         delegate.setProtocolVersion(null);
-        assertNotSame(ProtocolVersion.TLS12, delegate.getProtocolVersion());
+        assertFalse(delegate.getProtocolVersion() == ProtocolVersion.TLS12);
         delegate.setProtocolVersion(ProtocolVersion.TLS12);
-        assertSame(ProtocolVersion.TLS12, delegate.getProtocolVersion());
+        assertTrue(delegate.getProtocolVersion() == ProtocolVersion.TLS12);
     }
 
-    /** Test of applyDelegate method, of class ProtocolVersionDelegate. */
+    /**
+     * Test of applyDelegate method, of class ProtocolVersionDelegate.
+     */
     @Test
     public void testApplyDelegate() {
         Config config = Config.createConfig();
         config.setHighestProtocolVersion(ProtocolVersion.SSL2);
         config.getDefaultClientConnection().setTransportHandlerType(TransportHandlerType.EAP_TLS);
         config.getDefaultServerConnection().setTransportHandlerType(TransportHandlerType.EAP_TLS);
-        String[] args = new String[2];
+        args = new String[2];
         args[0] = "-version";
         args[1] = "TLS12";
-        assertSame(ProtocolVersion.SSL2, config.getHighestProtocolVersion());
-        assertSame(
-                TransportHandlerType.EAP_TLS,
-                config.getDefaultClientConnection().getTransportHandlerType());
-        assertSame(
-                TransportHandlerType.EAP_TLS,
-                config.getDefaultServerConnection().getTransportHandlerType());
+        assertThat(config.getHighestProtocolVersion(), equalTo(ProtocolVersion.SSL2));
+        assertThat(config.getDefaultClientConnection().getTransportHandlerType(),
+            equalTo(TransportHandlerType.EAP_TLS));
+        assertThat(config.getDefaultServerConnection().getTransportHandlerType(),
+            equalTo(TransportHandlerType.EAP_TLS));
 
         jcommander.parse(args);
         delegate.applyDelegate(config);
 
-        assertSame(ProtocolVersion.TLS12, config.getHighestProtocolVersion());
-        assertSame(
-                TransportHandlerType.TCP,
-                config.getDefaultClientConnection().getTransportHandlerType());
-        assertSame(
-                TransportHandlerType.TCP,
-                config.getDefaultServerConnection().getTransportHandlerType());
+        assertThat(config.getHighestProtocolVersion(), equalTo(ProtocolVersion.TLS12));
+        assertThat(config.getDefaultClientConnection().getTransportHandlerType(), equalTo(TransportHandlerType.TCP));
+        assertThat(config.getDefaultServerConnection().getTransportHandlerType(), equalTo(TransportHandlerType.TCP));
     }
 
     @Test
@@ -89,6 +98,7 @@ public class ProtocolVersionDelegateTest extends AbstractDelegateTest<ProtocolVe
         Config config = Config.createConfig();
         Config config2 = Config.createConfig();
         delegate.applyDelegate(config);
-        assertTrue(EqualsBuilder.reflectionEquals(config, config2, "keyStore", "ourCertificate"));
+        assertTrue(EqualsBuilder.reflectionEquals(config, config2, "keyStore", "ourCertificate"));// little
+        // ugly
     }
 }

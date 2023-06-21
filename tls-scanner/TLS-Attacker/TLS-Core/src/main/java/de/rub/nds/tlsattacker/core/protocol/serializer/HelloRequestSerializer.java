@@ -1,13 +1,15 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.serializer;
 
+import de.rub.nds.tlsattacker.core.constants.ProtocolVersion;
 import de.rub.nds.tlsattacker.core.protocol.message.HelloRequestMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,10 +21,13 @@ public class HelloRequestSerializer extends HandshakeMessageSerializer<HelloRequ
     /**
      * Constructor for the HelloRequestSerializer
      *
-     * @param message Message that should be serialized
+     * @param message
+     *                Message that should be serialized
+     * @param version
+     *                Version of the Protocol
      */
-    public HelloRequestSerializer(HelloRequestMessage message) {
-        super(message);
+    public HelloRequestSerializer(HelloRequestMessage message, ProtocolVersion version) {
+        super(message, version);
     }
 
     @Override
@@ -30,4 +35,5 @@ public class HelloRequestSerializer extends HandshakeMessageSerializer<HelloRequ
         LOGGER.debug("Serializing HelloRequestMessage");
         return getAlreadySerialized();
     }
+
 }

@@ -1,42 +1,59 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.protocol.preparator.extension;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package de.rub.nds.tlsattacker.core.protocol.preparator.extension;
 
 import de.rub.nds.tlsattacker.core.constants.ExtensionType;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.PaddingExtensionMessage;
 import de.rub.nds.tlsattacker.core.protocol.serializer.extension.PaddingExtensionSerializer;
-import org.junit.jupiter.api.Test;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
-public class PaddingExtensionPreparatorTest
-        extends AbstractExtensionMessagePreparatorTest<
-                PaddingExtensionMessage, PaddingExtensionSerializer, PaddingExtensionPreparator> {
+public class PaddingExtensionPreparatorTest {
 
-    public PaddingExtensionPreparatorTest() {
-        super(
-                PaddingExtensionMessage::new,
-                PaddingExtensionSerializer::new,
-                PaddingExtensionPreparator::new);
+    private final int extensionLength = 6;
+    private final byte[] extensionPayload = new byte[] { 0, 0, 0, 0, 0, 0 };
+    private TlsContext context;
+    private PaddingExtensionMessage message;
+    private PaddingExtensionPreparator preparator;
+
+    /**
+     * Some initial set up.
+     */
+    @Before
+    public void setUp() {
+        context = new TlsContext();
+        message = new PaddingExtensionMessage();
+        preparator =
+            new PaddingExtensionPreparator(context.getChooser(), message, new PaddingExtensionSerializer(message));
     }
 
-    /** Tests the preparator of the padding extension message. */
+    /**
+     * Tests the preparator of the padding extension message.
+     */
     @Test
-    @Override
-    public void testPrepare() {
-        byte[] extensionPayload = new byte[] {0, 0, 0, 0, 0, 0};
+    public void testPreparator() {
         context.getConfig().setDefaultPaddingExtensionBytes(extensionPayload);
         preparator.prepare();
 
         assertArrayEquals(ExtensionType.PADDING.getValue(), message.getExtensionType().getValue());
-        assertEquals(6, message.getExtensionLength().getValue());
+        assertEquals(extensionLength, (long) message.getExtensionLength().getValue());
         assertArrayEquals(extensionPayload, message.getPaddingBytes().getValue());
+
     }
+
+    @Test
+    public void testNoContextPrepare() {
+        preparator.prepare();
+    }
+
 }

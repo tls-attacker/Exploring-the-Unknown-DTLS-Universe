@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.constants;
 
 import java.util.HashMap;
@@ -13,7 +14,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-/** RFC6091 and RFC7250 */
+/**
+ * RFC6091 and RFC7250
+ */
 public enum CertificateType {
     X509((byte) 0),
     OPEN_PGP((byte) 1),

@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
 import de.rub.nds.modifiablevariable.HoldsModifiableVariable;
@@ -19,37 +20,33 @@ import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.ExtensionType;
 import de.rub.nds.tlsattacker.core.constants.HandshakeMessageType;
 import de.rub.nds.tlsattacker.core.constants.ProtocolMessageType;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
 import de.rub.nds.tlsattacker.core.protocol.ModifiableVariableHolder;
-import de.rub.nds.tlsattacker.core.protocol.ProtocolMessage;
-import de.rub.nds.tlsattacker.core.protocol.handler.HandshakeMessageHandler;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.ExtensionMessage;
-import de.rub.nds.tlsattacker.core.protocol.parser.HandshakeMessageParser;
-import de.rub.nds.tlsattacker.core.protocol.preparator.HandshakeMessagePreparator;
-import de.rub.nds.tlsattacker.core.protocol.serializer.HandshakeMessageSerializer;
-import jakarta.xml.bind.annotation.XmlElementRef;
-import jakarta.xml.bind.annotation.XmlElementWrapper;
-import jakarta.xml.bind.annotation.XmlTransient;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import javax.xml.bind.annotation.*;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
-        extends ProtocolMessage<Self> {
+public abstract class HandshakeMessage extends TlsMessage {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    @XmlTransient protected boolean isIncludeInDigestDefault = true;
+    @XmlTransient
+    protected boolean isIncludeInDigestDefault = true;
 
-    @XmlTransient protected boolean isRetranmissionDefault = false;
+    @XmlTransient
+    protected boolean isRetranmissionDefault = false;
 
-    @XmlTransient protected final HandshakeMessageType handshakeMessageType;
+    @XmlTransient
+    protected final HandshakeMessageType handshakeMessageType;
 
-    /** handshake type */
+    /**
+     * handshake type
+     */
     private ModifiableByte type = null;
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
@@ -61,20 +58,29 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.NONE)
     private ModifiableBoolean retransmission = null;
 
-    private ModifiableByteArray messageContent = null;
-    /** List of extensions */
-    @XmlElementWrapper @XmlElementRef @HoldsModifiableVariable
+    /**
+     * List of extensions
+     */
+    @XmlElementWrapper
+    @XmlElementRef
+    @HoldsModifiableVariable
     private List<ExtensionMessage> extensions;
 
-    @ModifiableVariableProperty private ModifiableByteArray extensionBytes;
+    @ModifiableVariableProperty
+    private ModifiableByteArray extensionBytes;
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     private ModifiableInteger extensionsLength;
 
-    @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.COUNT)
-    private ModifiableInteger messageSequence = null;
+    private ModifiableInteger messageSequence;
 
     public HandshakeMessage(HandshakeMessageType handshakeMessageType) {
+        super();
+        this.protocolMessageType = ProtocolMessageType.HANDSHAKE;
+        this.handshakeMessageType = handshakeMessageType;
+    }
+
+    public HandshakeMessage(Config tlsConfig, HandshakeMessageType handshakeMessageType) {
         super();
         this.protocolMessageType = ProtocolMessageType.HANDSHAKE;
         this.handshakeMessageType = handshakeMessageType;
@@ -90,9 +96,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
         }
         List<ExtensionMessage> extensionMessages = new ArrayList<>(this.getExtensions());
         Optional<ExtensionMessage> extension =
-                extensionMessages.stream()
-                        .filter(i -> i.getClass().equals(extensionClass))
-                        .findFirst();
+            extensionMessages.stream().filter(i -> i.getClass().equals(extensionClass)).findFirst();
         if (extension.isPresent()) {
             return extensionClass.cast(extension.get());
         }
@@ -101,10 +105,6 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
 
     public final void setExtensions(List<ExtensionMessage> extensions) {
         this.extensions = extensions;
-    }
-
-    public List<ExtensionMessage> createConfiguredExtensions(Config tlsConfig) {
-        return new LinkedList<>();
     }
 
     public final void addExtension(ExtensionMessage extension) {
@@ -130,8 +130,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
     }
 
     public void setExtensionBytes(byte[] extensionBytes) {
-        this.extensionBytes =
-                ModifiableVariableFactory.safelySetValue(this.extensionBytes, extensionBytes);
+        this.extensionBytes = ModifiableVariableFactory.safelySetValue(this.extensionBytes, extensionBytes);
     }
 
     public void setExtensionBytes(ModifiableByteArray extensionBytes) {
@@ -151,8 +150,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
     }
 
     public void setExtensionsLength(int extensionsLength) {
-        this.extensionsLength =
-                ModifiableVariableFactory.safelySetValue(this.extensionsLength, extensionsLength);
+        this.extensionsLength = ModifiableVariableFactory.safelySetValue(this.extensionsLength, extensionsLength);
     }
 
     public ModifiableByte getType() {
@@ -202,8 +200,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
     }
 
     public void setIncludeInDigest(boolean includeInDigest) {
-        this.includeInDigest =
-                ModifiableVariableFactory.safelySetValue(this.includeInDigest, includeInDigest);
+        this.includeInDigest = ModifiableVariableFactory.safelySetValue(this.includeInDigest, includeInDigest);
     }
 
     public ModifiableBoolean getIncludeInDigestModifiableBoolean() {
@@ -215,8 +212,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
     }
 
     public void setRetransmission(boolean retransmission) {
-        this.retransmission =
-                ModifiableVariableFactory.safelySetValue(this.retransmission, retransmission);
+        this.retransmission = ModifiableVariableFactory.safelySetValue(this.retransmission, retransmission);
     }
 
     public ModifiableBoolean isRetransmissionModifiableBoolean() {
@@ -232,8 +228,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
     }
 
     public void setMessageSequence(int messageSequence) {
-        this.messageSequence =
-                ModifiableVariableFactory.safelySetValue(this.messageSequence, messageSequence);
+        this.messageSequence = ModifiableVariableFactory.safelySetValue(this.messageSequence, messageSequence);
     }
 
     @Override
@@ -260,7 +255,7 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
         StringBuilder sb = new StringBuilder();
         sb.append(handshakeMessageType.getName());
         if (isRetransmission()) {
-            sb.append(" (ret.)");
+            sb.append(" (retransmission)");
         }
         return sb.toString();
     }
@@ -276,31 +271,5 @@ public abstract class HandshakeMessage<Self extends HandshakeMessage<?>>
             }
         }
         return holders;
-    }
-
-    @Override
-    public abstract HandshakeMessageParser<Self> getParser(
-            TlsContext tlsContext, InputStream stream);
-
-    @Override
-    public abstract HandshakeMessagePreparator<Self> getPreparator(TlsContext tlsContext);
-
-    @Override
-    public abstract HandshakeMessageSerializer<Self> getSerializer(TlsContext tlsContext);
-
-    @Override
-    public abstract HandshakeMessageHandler<Self> getHandler(TlsContext tlsContext);
-
-    public ModifiableByteArray getMessageContent() {
-        return messageContent;
-    }
-
-    public void setMessageContent(ModifiableByteArray messageContent) {
-        this.messageContent = messageContent;
-    }
-
-    public void setMessageContent(byte[] content) {
-        this.messageContent =
-                ModifiableVariableFactory.safelySetValue(this.messageContent, content);
     }
 }

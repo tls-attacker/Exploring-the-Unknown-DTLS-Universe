@@ -1,31 +1,35 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
 import de.rub.nds.modifiablevariable.HoldsModifiableVariable;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.protocol.ModifiableVariableHolder;
 import de.rub.nds.tlsattacker.core.protocol.handler.RSAClientKeyExchangeHandler;
+import de.rub.nds.tlsattacker.core.protocol.handler.TlsMessageHandler;
 import de.rub.nds.tlsattacker.core.protocol.message.computations.RSAClientComputations;
-import de.rub.nds.tlsattacker.core.protocol.parser.RSAClientKeyExchangeParser;
-import de.rub.nds.tlsattacker.core.protocol.preparator.RSAClientKeyExchangePreparator;
-import de.rub.nds.tlsattacker.core.protocol.serializer.RSAClientKeyExchangeSerializer;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import java.io.InputStream;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
 import java.util.List;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "RSAClientKeyExchange")
-public class RSAClientKeyExchangeMessage<Self extends RSAClientKeyExchangeMessage<?>>
-        extends ClientKeyExchangeMessage<Self> {
+public class RSAClientKeyExchangeMessage extends ClientKeyExchangeMessage {
 
-    @HoldsModifiableVariable @XmlElement protected RSAClientComputations computations;
+    @HoldsModifiableVariable
+    @XmlElement
+    protected RSAClientComputations computations;
+
+    public RSAClientKeyExchangeMessage(Config tlsConfig) {
+        super(tlsConfig);
+    }
 
     public RSAClientKeyExchangeMessage() {
         super();
@@ -44,34 +48,13 @@ public class RSAClientKeyExchangeMessage<Self extends RSAClientKeyExchangeMessag
     }
 
     @Override
-    public RSAClientKeyExchangeHandler getHandler(TlsContext tlsContext) {
-        return new RSAClientKeyExchangeHandler<>(tlsContext);
-    }
-
-    @Override
-    public RSAClientKeyExchangeParser getParser(TlsContext tlsContext, InputStream stream) {
-        return new RSAClientKeyExchangeParser<>(stream, tlsContext);
-    }
-
-    @Override
-    public RSAClientKeyExchangePreparator getPreparator(TlsContext tlsContext) {
-        return new RSAClientKeyExchangePreparator(tlsContext.getChooser(), this);
-    }
-
-    @Override
-    public RSAClientKeyExchangeSerializer getSerializer(TlsContext tlsContext) {
-        return new RSAClientKeyExchangeSerializer(
-                this, tlsContext.getChooser().getSelectedProtocolVersion());
+    public RSAClientKeyExchangeHandler<? extends RSAClientKeyExchangeMessage> getHandler(TlsContext context) {
+        return new RSAClientKeyExchangeHandler<>(context);
     }
 
     @Override
     public String toCompactString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("RSA_CLIENT_KEY_EXCHANGE");
-        if (isRetransmission()) {
-            sb.append(" (ret.)");
-        }
-        return sb.toString();
+        return "RSA_CLIENT_KEY_EXCHANGE";
     }
 
     @Override
@@ -94,4 +77,5 @@ public class RSAClientKeyExchangeMessage<Self extends RSAClientKeyExchangeMessag
     public String toShortString() {
         return "RSA_CKE";
     }
+
 }

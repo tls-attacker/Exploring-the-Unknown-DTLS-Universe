@@ -1,47 +1,55 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.dtls;
 
-import static de.rub.nds.tlsattacker.core.dtls.FragmentUtils.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+package de.rub.nds.tlsattacker.core.dtls;
 
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.tlsattacker.core.config.Config;
+import static de.rub.nds.tlsattacker.core.dtls.FragmentUtils.checkFragment;
+import static de.rub.nds.tlsattacker.core.dtls.FragmentUtils.fragment;
+import static de.rub.nds.tlsattacker.core.dtls.FragmentUtils.fragmentOfMsg;
+import de.rub.nds.tlsattacker.core.exceptions.IllegalDtlsFragmentException;
 import de.rub.nds.tlsattacker.core.protocol.message.DtlsHandshakeMessageFragment;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
 public class FragmentCollectorTest {
 
     private FragmentCollector collector;
 
-    @BeforeEach
+    @Before
     public void setUp() {
         collector = new FragmentCollector(Config.createConfig(), (byte) 0, 0, 10);
     }
 
-    /** Test that addFragment is successful. (Does not throw an exception */
+    /**
+     * Test that addFragment is successful. (Does not throw an exception
+     */
     @Test
     public void testAddTrue() {
         collector.addFragment(fragment(0, 0, 10, 0));
     }
 
-    /** Test that adding the same fragment twice is not a problem. */
-    @Test
+    /**
+     * Test that adding the same fragment twice is not a problem.
+     */
     public void testAddFalse() {
         DtlsHandshakeMessageFragment frag = fragment(0, 0, 10, 0);
         collector.addFragment(frag);
         collector.addFragment(frag);
     }
 
-    /** Test isMessageComplete when all fragments are inserted orderly. */
+    /**
+     * Test isMessageComplete when all fragments are inserted orderly.
+     */
     @Test
     public void testIsMessageCompleteTrue() {
         collector.addFragment(fragment(0, 0, 5, 0));
@@ -49,7 +57,9 @@ public class FragmentCollectorTest {
         assertTrue(collector.isMessageComplete());
     }
 
-    /** Test isMessageComplete when there is a missing byte. */
+    /**
+     * Test isMessageComplete when there is a missing byte.
+     */
     @Test
     public void testIsMessageCompleteFalse() {
         collector.addFragment(fragment(0, 0, 5, 0));
@@ -57,7 +67,9 @@ public class FragmentCollectorTest {
         assertFalse(collector.isMessageComplete());
     }
 
-    /** Test isMessageComplete when all fragments are inserted disorderly. */
+    /**
+     * Test isMessageComplete when all fragments are inserted disorderly.
+     */
     @Test
     public void testIsMessageCompleteDisorderlyTrue() {
         collector.addFragment(fragment(0, 0, 2, 0));
@@ -67,7 +79,9 @@ public class FragmentCollectorTest {
         assertTrue(collector.isMessageComplete());
     }
 
-    /** Test isMessageComplete when all fragments are inserted disorderly with overlap. */
+    /**
+     * Test isMessageComplete when all fragments are inserted disorderly with overlap.
+     */
     @Test
     public void testIsMessageCompleteTrueDisorderlyOverlap() {
         collector.addFragment(fragment(0, 5, 3, 0));
@@ -78,8 +92,7 @@ public class FragmentCollectorTest {
     }
 
     /**
-     * Test isMessageComplete when all fragments are inserted disorderly with overlap a few bytes
-     * are missing.
+     * Test isMessageComplete when all fragments are inserted disorderly with overlap a few bytes are missing.
      */
     @Test
     public void testIsMessageCompleteFalseDisorderlyOverlap() {
@@ -88,12 +101,14 @@ public class FragmentCollectorTest {
         assertFalse(collector.isMessageComplete());
     }
 
-    /** Test isFitting for unfitting fragments. */
+    /**
+     * Test isFitting for unfitting fragments.
+     */
     @Test
     public void testIsFittingFalse() {
         collector.addFragment(fragment(0, 0, 7, 0));
         DtlsHandshakeMessageFragment badSeq = fragment(0, 6, 3, 0);
-        badSeq.setMessageSequence(1000);
+        badSeq.setMessageSeq(1000);
         assertFalse(collector.isFitting(badSeq));
         DtlsHandshakeMessageFragment badLength = fragment(0, 6, 3, 0);
         badLength.setLength(1000);
@@ -103,7 +118,9 @@ public class FragmentCollectorTest {
         assertFalse(collector.isFitting(badType));
     }
 
-    /** Test isFitting for fragment which has the same type as a previously added fragment. */
+    /**
+     * Test isFitting for fragment which has the same type as a previously added fragment.
+     */
     @Test
     public void testIsFittingTrue() {
         collector.addFragment(fragment(0, 0, 7, 0));
@@ -112,7 +129,9 @@ public class FragmentCollectorTest {
         assertTrue(collector.isFitting(frag));
     }
 
-    /** Test buildCombinedFragment in the usual case. */
+    /**
+     * Test buildCombinedFragment in the usual case.
+     */
     @Test
     public void testBuildCombinedFragment() {
         byte[] original = ArrayConverter.hexStringToByteArray("123456789A123456789A");
@@ -120,10 +139,12 @@ public class FragmentCollectorTest {
         collector.addFragment(fragmentOfMsg(0, 3, 5, original, 0));
         collector.addFragment(fragmentOfMsg(0, 8, 2, original, 0));
         DtlsHandshakeMessageFragment fragment = collector.buildCombinedFragment();
-        assertFragment(fragment, 0, 10, original);
+        checkFragment(fragment, 0, 10, original);
     }
 
-    /** Test buildCombinedFragment when fragments have been inserted disorderly with overlaps. */
+    /**
+     * Test buildCombinedFragment when fragments have been inserted disorderly with overlaps.
+     */
     @Test
     public void testBuildCombinedFragmentDisorderlyOverlap() {
         byte[] original = ArrayConverter.hexStringToByteArray("123456789A123456789A");
@@ -131,10 +152,12 @@ public class FragmentCollectorTest {
         collector.addFragment(fragmentOfMsg(0, 0, 3, original, 0));
         collector.addFragment(fragmentOfMsg(0, 2, 4, original, 0));
         DtlsHandshakeMessageFragment fragment = collector.buildCombinedFragment();
-        assertFragment(fragment, 0, 10, original);
+        checkFragment(fragment, 0, 10, original);
     }
 
-    /** Test buildCombinedFragment when not all bytes have been received. */
+    /**
+     * Test buildCombinedFragment when not all bytes have been received.
+     */
     @Test
     public void testBuildCombinedFragmentIncomplete() {
         byte[] original = ArrayConverter.hexStringToByteArray("123456789A123456789A");
@@ -142,12 +165,11 @@ public class FragmentCollectorTest {
         collector.addFragment(fragmentOfMsg(0, 6, 4, original, 0));
         DtlsHandshakeMessageFragment fragment = collector.buildCombinedFragment();
         byte[] expected = ArrayConverter.hexStringToByteArray("123456789A3456789A");
-        assertFragment(fragment, 0, 10, expected);
+        checkFragment(fragment, 0, 10, expected);
     }
 
     /**
-     * Test buildCombinedFragment after adding an unfitting fragment, with only fitting set to
-     * false.
+     * Test buildCombinedFragment after adding an unfitting fragment, with only fitting set to false.
      */
     @Test
     public void testBuildCombinedFragmentAddUnfitting() {
@@ -161,6 +183,6 @@ public class FragmentCollectorTest {
         collector.addFragment(unfitting);
         DtlsHandshakeMessageFragment fragment = collector.buildCombinedFragment();
         byte[] expected = ArrayConverter.hexStringToByteArray("123456789A3456789A");
-        assertFragment(fragment, 0, 10, expected);
+        checkFragment(fragment, 0, 10, expected);
     }
 }

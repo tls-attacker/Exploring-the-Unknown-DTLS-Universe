@@ -1,31 +1,59 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.serializer.extension;
 
+import de.rub.nds.tlsattacker.core.constants.ExtensionType;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.GreaseExtensionMessage;
 import de.rub.nds.tlsattacker.core.protocol.parser.extension.GreaseExtensionParserTest;
-import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-public class GreaseExtensionSerializerTest
-        extends AbstractExtensionMessageSerializerTest<
-                GreaseExtensionMessage, GreaseExtensionSerializer> {
+import java.util.Collection;
 
-    public GreaseExtensionSerializerTest() {
-        super(
-                GreaseExtensionMessage::new,
-                GreaseExtensionSerializer::new,
-                List.of((msg, obj) -> msg.setRandomData((byte[]) obj)));
+import static org.junit.Assert.assertArrayEquals;
+
+@RunWith(Parameterized.class)
+public class GreaseExtensionSerializerTest {
+    @Parameterized.Parameters
+    public static Collection<Object[]> generateData() {
+        return GreaseExtensionParserTest.generateData();
     }
 
-    public static Stream<Arguments> provideTestVectors() {
-        return GreaseExtensionParserTest.provideTestVectors();
+    private final byte[] extension;
+    private final int start;
+    private final byte[] completeExtension;
+    private final ExtensionType type;
+    private final int extensionLength;
+    private final byte[] randomData;
+
+    public GreaseExtensionSerializerTest(byte[] extension, int start, byte[] completeExtension, ExtensionType type,
+        int extensionLength, byte[] randomData) {
+        this.extension = extension;
+        this.start = start;
+        this.completeExtension = completeExtension;
+        this.type = type;
+        this.extensionLength = extensionLength;
+        this.randomData = randomData;
+    }
+
+    /**
+     * Test of serializeExtensionContent method, of class KeyShareExtensionSerializerTest.
+     */
+    @Test
+    public void testSerializeExtensionContent() {
+        GreaseExtensionMessage msg = new GreaseExtensionMessage();
+        msg.setExtensionType(type.getValue());
+        msg.setRandomData(randomData);
+        msg.setExtensionLength(randomData.length);
+        GreaseExtensionSerializer serializer = new GreaseExtensionSerializer(msg);
+        assertArrayEquals(completeExtension, serializer.serialize());
     }
 }

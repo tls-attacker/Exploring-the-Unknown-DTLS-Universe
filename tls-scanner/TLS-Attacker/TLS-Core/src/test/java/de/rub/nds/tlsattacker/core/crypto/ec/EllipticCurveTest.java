@@ -1,27 +1,28 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.crypto.ec;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import de.rub.nds.tlsattacker.core.constants.NamedGroup;
-import de.rub.nds.tlsattacker.util.tests.TestCategories;
 import java.math.BigInteger;
 import java.util.Random;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.Test;
 
-/** Testing EllipticCurve, CurveFactory, EllipticCurveOverFp and EllipticCurveOverF2m */
+/**
+ * Testing EllipticCurve, CurveFactory, EllipticCurveOverFp and EllipticCurveOverF2m
+ */
 public class EllipticCurveTest {
-
     /*
      * Please notice that these tests can provide correctness only in a probabilistic sense. (Though with a very high
      * probability, since the curve parameters are very large.)
@@ -30,32 +31,45 @@ public class EllipticCurveTest {
     private Random rnd;
     private Point inf;
 
-    @BeforeEach
+    @Before
     public void setUp() {
         this.rnd = new Random();
         this.inf = new Point();
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = NamedGroup.class,
-            // Exclude FFDHE and EXPLICIT groups from this test
-            names = {"^FFDHE[0-9]*", "^EXPLICIT_.*"},
-            mode = EnumSource.Mode.MATCH_NONE)
-    @Tag(TestCategories.SLOW_TEST)
-    public void test(NamedGroup providedNamedGroup) {
-        EllipticCurve curve = CurveFactory.getCurve(providedNamedGroup);
-        Point basePoint = curve.getBasePoint();
-        BigInteger basePointOrder = curve.getBasePointOrder();
+    @Test
+    public void test() {
+        final int implemented = 46;
+        int counter = 0;
 
-        this.assertCurveParameters(curve, basePoint);
-        this.assertCurveGroupLaws(curve, basePoint, basePointOrder);
-        this.assertCurveArithmetic(curve, basePoint, basePointOrder);
-        this.assertDecompression(curve, basePoint);
+        for (NamedGroup name : NamedGroup.values()) {
+
+            try {
+                EllipticCurve curve = CurveFactory.getCurve(name);
+                Point basePoint = curve.getBasePoint();
+                BigInteger basePointOrder = curve.getBasePointOrder();
+
+                this.testCurveParameters(curve, basePoint);
+
+                this.testCurveGroupLaws(curve, basePoint, basePointOrder);
+
+                this.testCurveArithmetic(curve, basePoint, basePointOrder);
+
+                this.testDecompression(curve, basePoint);
+
+                counter++;
+            } catch (UnsupportedOperationException e) {
+            }
+        }
+
+        if (counter != implemented) {
+            fail();
+        }
+
     }
 
-    private void assertCurveParameters(EllipticCurve curve, Point basePoint) {
-        assertTrue(curve.isOnCurve(basePoint));
+    private void testCurveParameters(EllipticCurve curve, Point basePoint) {
+        assertEquals(true, curve.isOnCurve(basePoint));
 
         // Constructing a point, that is not on the curve, to ensure that the
         // first test was no false positive.
@@ -64,11 +78,10 @@ public class EllipticCurveTest {
         BigInteger wrongX = x.add(BigInteger.ONE);
         Point wrongPoint = curve.getPoint(wrongX, y);
 
-        assertFalse(curve.isOnCurve(wrongPoint));
+        assertEquals(false, curve.isOnCurve(wrongPoint));
     }
 
-    private void assertCurveGroupLaws(
-            EllipticCurve curve, Point basePoint, BigInteger basePointOrder) {
+    private void testCurveGroupLaws(EllipticCurve curve, Point basePoint, BigInteger basePointOrder) {
         Point inv = curve.inverse(basePoint);
 
         assertNotEquals(inf, basePoint);
@@ -107,8 +120,7 @@ public class EllipticCurveTest {
         assertEquals(basePoint, result);
     }
 
-    private void assertCurveArithmetic(
-            EllipticCurve curve, Point basePoint, BigInteger basePointOrder) {
+    private void testCurveArithmetic(EllipticCurve curve, Point basePoint, BigInteger basePointOrder) {
         for (int i = 0; i < 2; i++) {
             // Testing for a random r
             // This should work for r>ord(p) too
@@ -142,7 +154,7 @@ public class EllipticCurveTest {
         }
     }
 
-    private void assertDecompression(EllipticCurve curve, Point basePoint) {
+    private void testDecompression(EllipticCurve curve, Point basePoint) {
         Point decompressed = curve.createAPointOnCurve(basePoint.getFieldX().getData());
 
         // two points share the same x-coordinate - apply inverse if necessary

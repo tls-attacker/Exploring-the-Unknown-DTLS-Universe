@@ -1,22 +1,25 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.preparator.extension;
 
-import de.rub.nds.tlsattacker.core.layer.data.Preparator;
+import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.ExtensionMessage;
+import de.rub.nds.tlsattacker.core.protocol.Preparator;
 import de.rub.nds.tlsattacker.core.protocol.serializer.extension.ExtensionSerializer;
 import de.rub.nds.tlsattacker.core.workflow.chooser.Chooser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * @param <T> The ExtensionMessage that should be prepared
+ * @param <T>
+ *            The ExtensionMessage that should be prepared
  */
 public abstract class ExtensionPreparator<T extends ExtensionMessage> extends Preparator<T> {
 
@@ -32,18 +35,11 @@ public abstract class ExtensionPreparator<T extends ExtensionMessage> extends Pr
         this.serializer = serializer;
     }
 
-    public ExtensionPreparator(Chooser chooser, T message) {
-        super(chooser, message);
-        this.msg = message;
-        this.serializer = message.getSerializer(chooser.getContext().getTlsContext());
-    }
-
     @Override
     public final void prepare() {
         prepareExtensionType(msg);
         prepareExtensionContent();
         content = serializer.serializeExtensionContent();
-        prepareExtensionContentBytes(msg);
         prepareExtensionLength(msg);
         prepareExtensionBytes(msg);
     }
@@ -53,18 +49,19 @@ public abstract class ExtensionPreparator<T extends ExtensionMessage> extends Pr
         prepareExtensionType(msg);
         afterPrepareExtensionContent();
         content = serializer.serializeExtensionContent();
-        prepareExtensionContentBytes(msg);
         prepareExtensionLength(msg);
         prepareExtensionBytes(msg);
     }
 
     public abstract void prepareExtensionContent();
 
-    public void afterPrepareExtensionContent() {}
+    public void afterPrepareExtensionContent() {
+
+    }
 
     private void prepareExtensionType(ExtensionMessage msg) {
         msg.setExtensionType(msg.getExtensionTypeConstant().getValue());
-        LOGGER.debug("ExtensionType: {}", msg.getExtensionType().getValue());
+        LOGGER.debug("ExtensionType: " + ArrayConverter.bytesToHexString(msg.getExtensionType().getValue()));
     }
 
     private void prepareExtensionLength(ExtensionMessage msg) {
@@ -74,11 +71,7 @@ public abstract class ExtensionPreparator<T extends ExtensionMessage> extends Pr
 
     private void prepareExtensionBytes(ExtensionMessage msg) {
         msg.setExtensionBytes(serializer.serialize());
-        LOGGER.debug("ExtensionBytes: {}", msg.getExtensionBytes().getValue());
+        LOGGER.debug("ExtensionBytes: " + ArrayConverter.bytesToHexString(msg.getExtensionBytes().getValue()));
     }
 
-    private void prepareExtensionContentBytes(ExtensionMessage msg) {
-        msg.setExtensionContent(content);
-        LOGGER.debug("ExtensionContent: {}", msg.getExtensionContent().getValue());
-    }
 }

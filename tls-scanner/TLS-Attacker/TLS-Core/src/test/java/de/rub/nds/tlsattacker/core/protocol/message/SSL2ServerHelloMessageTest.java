@@ -1,31 +1,47 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.After;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-public class SSL2ServerHelloMessageTest extends AbstractMessageTest<SSL2ServerHelloMessage> {
+public class SSL2ServerHelloMessageTest {
 
-    public SSL2ServerHelloMessageTest() {
-        super(
-                SSL2ServerHelloMessage::new,
-                "SSL2ServerHelloMessage:\n"
-                        + "  Protocol Version: %s\n"
-                        + "  Type: %s\n"
-                        + "  Supported CipherSuites: %s\n"
-                        + "  SessionIdHit: %s\n"
-                        + "  Certificate: %s\n"
-                        + "  SessionID: %s");
+    SSL2ServerHelloMessage message;
+
+    @Before
+    public void setUp() {
+        message = new SSL2ServerHelloMessage();
     }
 
-    public static Stream<Arguments> provideToStringTestVectors() {
-        return Stream.of(Arguments.of(new Object[] {null, null, null, null, null, null}, null));
+    @After
+    public void tearDown() {
     }
+
+    /**
+     * Test of toString method, of class SSL2ServerHelloMessage.
+     */
+    @Test
+    public void testToString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SSL2ServerHelloMessage:");
+        sb.append("\n  Protocol Version: ").append("null");
+        sb.append("\n  Type: ").append("null");
+        sb.append("\n  Supported CipherSuites: ").append("null");
+        sb.append("\n  SessionIdHit: ").append("null");
+        sb.append("\n  Certificate: ").append("null");
+        sb.append("\n  SessionID: ").append("null");
+
+        assertEquals(message.toString(), sb.toString());
+    }
+
 }

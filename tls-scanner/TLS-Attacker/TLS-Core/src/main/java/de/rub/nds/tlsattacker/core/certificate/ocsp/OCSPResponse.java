@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.certificate.ocsp;
 
 import static de.rub.nds.tlsattacker.core.certificate.ocsp.OCSPResponseTypes.BASIC;
@@ -140,10 +141,8 @@ public class OCSPResponse {
     }
 
     private String formatDate(String unformattedDateString) {
-        DateTimeFormatter inputFormatter =
-                DateTimeFormatter.ofPattern("yyyyMMddHHmmss'Z'", Locale.ENGLISH);
-        DateTimeFormatter outputFormatter =
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss'Z'", Locale.ENGLISH);
+        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
         LocalDateTime date = LocalDateTime.parse(unformattedDateString, inputFormatter);
         return outputFormatter.format(date);
     }
@@ -161,10 +160,7 @@ public class OCSPResponse {
                 } else if (dnKeyValue.get(1) instanceof Asn1PrimitiveUtf8String) {
                     value = ((Asn1PrimitiveUtf8String) dnKeyValue.get(1)).getValue();
                 }
-                sb.append("\n   ")
-                        .append(ObjectIdentifierTranslator.translate(oid))
-                        .append(": ")
-                        .append(value);
+                sb.append("\n   ").append(ObjectIdentifierTranslator.translate(oid)).append(": ").append(value);
             }
         }
         return sb.toString();
@@ -193,7 +189,7 @@ public class OCSPResponse {
         if (getResponseDataVersion() == null || getResponseDataVersion() == 0) {
             sb.append("1 (0x0)");
         } else {
-            sb.append("0x").append(Integer.toHexString(getResponseDataVersion()));
+            sb.append(Integer.toHexString(getResponseDataVersion()));
         }
         sb.append("\n Produced at: ").append(formatDate(getProducedAt()));
         sb.append("\n Response Type: ");
@@ -205,7 +201,7 @@ public class OCSPResponse {
         if (getResponderName() != null) {
             sb.append("\n Responder DN: ").append(parseResponderName());
         } else if (getResponderKey() != null) {
-            sb.append("\n Responder ID: ").append("0x").append(Hex.toHexString(getResponderKey()));
+            sb.append("\n Responder ID: ").append(Hex.toHexString(getResponderKey()));
         }
         if (getNonce() != null) {
             sb.append("\n Nonce: ").append(getNonce().toString());
@@ -217,38 +213,25 @@ public class OCSPResponse {
             certificateCounter++;
             sb.append("\n Certificate Status No. ").append(certificateCounter);
             sb.append("\n   Hash Algorithm: ")
-                    .append(
-                            ObjectIdentifierTranslator.translate(
-                                    certificateStatus.getHashAlgorithmIdentifier()));
-            sb.append("\n   Issuer Name Hash: ")
-                    .append("0x")
-                    .append(Hex.toHexString(certificateStatus.getIssuerNameHash()));
-            sb.append("\n   Issuer Key Hash: ")
-                    .append("0x")
-                    .append(Hex.toHexString(certificateStatus.getIssuerKeyHash()));
-            sb.append("\n   Serial Number: ")
-                    .append("0x")
-                    .append(certificateStatus.getSerialNumber().toString(16));
+                .append(ObjectIdentifierTranslator.translate(certificateStatus.getHashAlgorithmIdentifier()));
+            sb.append("\n   Issuer Name Hash: ").append(Hex.toHexString(certificateStatus.getIssuerNameHash()));
+            sb.append("\n   Issuer Key Hash: ").append(Hex.toHexString(certificateStatus.getIssuerKeyHash()));
+            sb.append("\n   Serial Number: ").append("0x").append(certificateStatus.getSerialNumber().toString(16));
             sb.append("\n   Certificate Status: ");
             sb.append(RevocationStatus.translate(certificateStatus.getCertificateStatus()));
-            if (certificateStatus
-                    .getCertificateStatus()
-                    .equals(RevocationStatus.translate("revoked"))) {
-                sb.append("\n    Revocation Time: ")
-                        .append(formatDate(certificateStatus.getRevocationTime()));
+            if (certificateStatus.getCertificateStatus().equals(RevocationStatus.translate("revoked"))) {
+                sb.append("\n    Revocation Time: ").append(formatDate(certificateStatus.getRevocationTime()));
                 if (certificateStatus.getRevocationReason() != null) {
                     sb.append("\n    Revocation Reason: ");
                     sb.append(CrlReason.translate(certificateStatus.getRevocationReason()));
                 }
             }
-            sb.append("\n   Last Update: ")
-                    .append(formatDate(certificateStatus.getTimeOfLastUpdate()));
-            sb.append("\n   Next Update: ")
-                    .append(formatDate(certificateStatus.getTimeOfNextUpdate()));
+            sb.append("\n   Last Update: ").append(formatDate(certificateStatus.getTimeOfLastUpdate()));
+            sb.append("\n   Next Update: ").append(formatDate(certificateStatus.getTimeOfNextUpdate()));
         }
 
         sb.append("\n Signature Algorithm: ")
-                .append(ObjectIdentifierTranslator.translate(getSignatureAlgorithmIdentifier()));
+            .append(ObjectIdentifierTranslator.translate(getSignatureAlgorithmIdentifier()));
 
         if (includeSignatureAndCertificate) {
             if (signature != null) {
@@ -258,8 +241,7 @@ public class OCSPResponse {
 
             if (getCertificate() != null) {
                 try {
-                    String certificateBytes =
-                            ArrayConverter.bytesToHexString(getResponseCertificateBytes());
+                    String certificateBytes = ArrayConverter.bytesToHexString(getResponseCertificateBytes());
                     sb.append("\n Certificate:").append(certificateBytes);
                 } catch (IOException e) {
                     e.printStackTrace();

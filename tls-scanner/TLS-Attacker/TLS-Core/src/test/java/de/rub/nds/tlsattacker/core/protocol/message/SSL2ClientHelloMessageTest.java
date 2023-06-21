@@ -1,30 +1,46 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.After;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-public class SSL2ClientHelloMessageTest extends AbstractMessageTest<SSL2ClientHelloMessage> {
+public class SSL2ClientHelloMessageTest {
 
-    public SSL2ClientHelloMessageTest() {
-        super(
-                SSL2ClientHelloMessage::new,
-                "SSL2ClientHelloMessage:\n"
-                        + "  Protocol Version: %s\n"
-                        + "  Type: %s\n"
-                        + "  Supported CipherSuites: %s\n"
-                        + "  Challenge: %s\n"
-                        + "  SessionID: %s");
+    SSL2ClientHelloMessage message;
+
+    @Before
+    public void setUp() {
+        message = new SSL2ClientHelloMessage();
     }
 
-    public static Stream<Arguments> provideToStringTestVectors() {
-        return Stream.of(Arguments.of(new Object[] {null, null, null, null, null}, null));
+    @After
+    public void tearDown() {
     }
+
+    /**
+     * Test of toString method, of class SSL2ClientHelloMessage.
+     */
+    @Test
+    public void testToString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SSL2ClientHelloMessage:");
+        sb.append("\n  Protocol Version: ").append("null");
+        sb.append("\n  Type: ").append("null");
+        sb.append("\n  Supported CipherSuites: ").append("null");
+        sb.append("\n  Challenge: ").append("null");
+        sb.append("\n  SessionID: ").append("null");
+
+        assertEquals(message.toString(), sb.toString());
+    }
+
 }

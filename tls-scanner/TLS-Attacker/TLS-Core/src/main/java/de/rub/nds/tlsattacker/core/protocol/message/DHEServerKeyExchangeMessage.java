@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
 import de.rub.nds.modifiablevariable.HoldsModifiableVariable;
@@ -14,40 +15,48 @@ import de.rub.nds.modifiablevariable.ModifiableVariableProperty;
 import de.rub.nds.modifiablevariable.bytearray.ModifiableByteArray;
 import de.rub.nds.modifiablevariable.integer.ModifiableInteger;
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
+import de.rub.nds.tlsattacker.core.config.Config;
+import de.rub.nds.tlsattacker.core.constants.HandshakeMessageType;
 import de.rub.nds.tlsattacker.core.protocol.ModifiableVariableHolder;
 import de.rub.nds.tlsattacker.core.protocol.handler.DHEServerKeyExchangeHandler;
 import de.rub.nds.tlsattacker.core.protocol.message.computations.DHEServerComputations;
-import de.rub.nds.tlsattacker.core.protocol.parser.DHEServerKeyExchangeParser;
-import de.rub.nds.tlsattacker.core.protocol.preparator.DHEServerKeyExchangePreparator;
-import de.rub.nds.tlsattacker.core.protocol.serializer.DHEServerKeyExchangeSerializer;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import java.io.InputStream;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
 import java.util.List;
+import javax.xml.bind.annotation.XmlRootElement;
 
-@XmlRootElement(name = "DHEServerKeyExchange")
-public class DHEServerKeyExchangeMessage<Self extends DHEServerKeyExchangeMessage<?>>
-        extends ServerKeyExchangeMessage<Self> {
+@XmlRootElement(name = "DHEClientKeyExchange")
+public class DHEServerKeyExchangeMessage extends ServerKeyExchangeMessage {
 
-    /** DH modulus */
+    /**
+     * DH modulus
+     */
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.PUBLIC_KEY)
     protected ModifiableByteArray modulus;
 
-    /** DH modulus Length */
+    /**
+     * DH modulus Length
+     */
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     protected ModifiableInteger modulusLength;
 
-    /** DH generator */
+    /**
+     * DH generator
+     */
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.PUBLIC_KEY)
     protected ModifiableByteArray generator;
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     protected ModifiableInteger generatorLength;
 
-    @HoldsModifiableVariable protected DHEServerComputations computations;
+    @HoldsModifiableVariable
+    protected DHEServerComputations computations;
 
     public DHEServerKeyExchangeMessage() {
         super();
+    }
+
+    public DHEServerKeyExchangeMessage(Config tlsConfig) {
+        super(tlsConfig, HandshakeMessageType.SERVER_KEY_EXCHANGE);
     }
 
     public ModifiableByteArray getModulus() {
@@ -83,8 +92,7 @@ public class DHEServerKeyExchangeMessage<Self extends DHEServerKeyExchangeMessag
     }
 
     public void setModulusLength(int modulusLength) {
-        this.modulusLength =
-                ModifiableVariableFactory.safelySetValue(this.modulusLength, modulusLength);
+        this.modulusLength = ModifiableVariableFactory.safelySetValue(this.modulusLength, modulusLength);
     }
 
     public ModifiableInteger getGeneratorLength() {
@@ -96,8 +104,7 @@ public class DHEServerKeyExchangeMessage<Self extends DHEServerKeyExchangeMessag
     }
 
     public void setGeneratorLength(int generatorLength) {
-        this.generatorLength =
-                ModifiableVariableFactory.safelySetValue(this.generatorLength, generatorLength);
+        this.generatorLength = ModifiableVariableFactory.safelySetValue(this.generatorLength, generatorLength);
     }
 
     @Override
@@ -130,8 +137,7 @@ public class DHEServerKeyExchangeMessage<Self extends DHEServerKeyExchangeMessag
         sb.append("\n  Signature and Hash Algorithm: ");
         // signature and hash algorithms are provided only while working with
         // (D)TLS 1.2
-        if (this.getSignatureAndHashAlgorithm() != null
-                && this.getSignatureAndHashAlgorithm().getValue() != null) {
+        if (this.getSignatureAndHashAlgorithm() != null && this.getSignatureAndHashAlgorithm().getValue() != null) {
             sb.append(ArrayConverter.bytesToHexString(getSignatureAndHashAlgorithm().getValue()));
         } else {
             sb.append("null");
@@ -146,34 +152,13 @@ public class DHEServerKeyExchangeMessage<Self extends DHEServerKeyExchangeMessag
     }
 
     @Override
-    public DHEServerKeyExchangeHandler<Self> getHandler(TlsContext tlsContext) {
-        return new DHEServerKeyExchangeHandler<>(tlsContext);
-    }
-
-    @Override
-    public DHEServerKeyExchangeParser<Self> getParser(TlsContext tlsContext, InputStream stream) {
-        return new DHEServerKeyExchangeParser<Self>(stream, tlsContext);
-    }
-
-    @Override
-    public DHEServerKeyExchangePreparator<Self> getPreparator(TlsContext tlsContext) {
-        return new DHEServerKeyExchangePreparator<Self>(tlsContext.getChooser(), (Self) this);
-    }
-
-    @Override
-    public DHEServerKeyExchangeSerializer<Self> getSerializer(TlsContext tlsContext) {
-        return new DHEServerKeyExchangeSerializer<Self>(
-                (Self) this, tlsContext.getChooser().getSelectedProtocolVersion());
+    public DHEServerKeyExchangeHandler<? extends DHEServerKeyExchangeMessage> getHandler(TlsContext context) {
+        return new DHEServerKeyExchangeHandler<>(context);
     }
 
     @Override
     public String toCompactString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("DHE_SERVER_KEY_EXCHANGE");
-        if (isRetransmission()) {
-            sb.append(" (ret.)");
-        }
-        return sb.toString();
+        return "DHE_SERVER_KEY_EXCHANGE";
     }
 
     @Override

@@ -1,47 +1,70 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.protocol.handler.extension;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package de.rub.nds.tlsattacker.core.protocol.handler.extension;
 
 import de.rub.nds.tlsattacker.core.constants.SrtpProtectionProfiles;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.SrtpExtensionMessage;
+import de.rub.nds.tlsattacker.core.protocol.parser.extension.SrtpExtensionParser;
+import de.rub.nds.tlsattacker.core.protocol.preparator.extension.SrtpExtensionPreparator;
+import de.rub.nds.tlsattacker.core.protocol.serializer.extension.SrtpExtensionSerializer;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
-public class SrtpExtensionHandlerTest
-        extends AbstractExtensionMessageHandlerTest<SrtpExtensionMessage, SrtpExtensionHandler> {
+public class SrtpExtensionHandlerTest {
 
-    private final List<SrtpProtectionProfiles> profiles =
-            Arrays.asList(
-                    SrtpProtectionProfiles.SRTP_AES128_CM_HMAC_SHA1_80,
-                            SrtpProtectionProfiles.SRTP_AES128_CM_HMAC_SHA1_32,
-                    SrtpProtectionProfiles.SRTP_NULL_HMAC_SHA1_80,
-                            SrtpProtectionProfiles.SRTP_NULL_HMAC_SHA1_32);
-    private final byte[] profilesAsBytes =
-            new byte[] {0x00, 0x01, 0x00, 0x02, 0x00, 0x05, 0x00, 0x06};
+    private TlsContext context;
+    private SrtpExtensionHandler handler;
+    private final List<SrtpProtectionProfiles> profiles = Arrays.asList(
+        SrtpProtectionProfiles.SRTP_AES128_CM_HMAC_SHA1_80, SrtpProtectionProfiles.SRTP_AES128_CM_HMAC_SHA1_32,
+        SrtpProtectionProfiles.SRTP_NULL_HMAC_SHA1_80, SrtpProtectionProfiles.SRTP_NULL_HMAC_SHA1_32);
+    private final byte[] profilesAsBytes = new byte[] { 0x00, 0x01, 0x00, 0x02, 0x00, 0x05, 0x00, 0x06 };
     private final byte[] mki = new byte[] {};
 
-    public SrtpExtensionHandlerTest() {
-        super(SrtpExtensionMessage::new, SrtpExtensionHandler::new);
+    @Before
+    public void setUp() {
+        context = new TlsContext();
+        handler = new SrtpExtensionHandler(context);
     }
 
     @Test
-    @Override
-    public void testadjustTLSExtensionContext() {
+    public void testAdjustTLSContext() {
         SrtpExtensionMessage msg = new SrtpExtensionMessage();
         msg.setSrtpProtectionProfiles(profilesAsBytes);
         msg.setSrtpMki(mki);
-        handler.adjustTLSExtensionContext(msg);
-        assertEquals(context.getSecureRealTimeTransportProtocolProtectionProfiles(), profiles);
+
+        handler.adjustTLSContext(msg);
+
+        assertThat(profiles, is(context.getSecureRealTimeTransportProtocolProtectionProfiles()));
+
         assertArrayEquals(mki, context.getSecureRealTimeProtocolMasterKeyIdentifier());
+    }
+
+    @Test
+    public void testGetParser() {
+        assertTrue(handler.getParser(new byte[0], 0, context.getConfig()) instanceof SrtpExtensionParser);
+    }
+
+    @Test
+    public void testGetPreparator() {
+        assertTrue(handler.getPreparator(new SrtpExtensionMessage()) instanceof SrtpExtensionPreparator);
+    }
+
+    @Test
+    public void testGetSerializer() {
+        assertTrue(handler.getSerializer(new SrtpExtensionMessage()) instanceof SrtpExtensionSerializer);
     }
 }

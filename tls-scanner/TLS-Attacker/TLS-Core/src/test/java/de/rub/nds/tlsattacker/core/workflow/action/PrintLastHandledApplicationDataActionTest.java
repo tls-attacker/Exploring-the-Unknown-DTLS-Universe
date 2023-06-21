@@ -1,44 +1,100 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.workflow.action;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import de.rub.nds.tlsattacker.core.state.State;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import de.rub.nds.tlsattacker.core.workflow.WorkflowTrace;
+import de.rub.nds.tlsattacker.util.tests.SlowTests;
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import javax.crypto.NoSuchPaddingException;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
-import org.junit.jupiter.api.Test;
+public class PrintLastHandledApplicationDataActionTest {
 
-public class PrintLastHandledApplicationDataActionTest
-        extends AbstractActionTest<PrintLastHandledApplicationDataAction> {
+    private State state;
+    private TlsContext ctx;
+    private PrintLastHandledApplicationDataAction action;
     private final String expectedAppDataEncodedString = "GET /theTestData";
+    private final String expectedAppDataHexString = "\n47 45 54 20 2F 74 68 65  54 65 73 74 44 61 74 61";
 
     public PrintLastHandledApplicationDataActionTest() {
-        super(
-                new PrintLastHandledApplicationDataAction(),
-                PrintLastHandledApplicationDataAction.class);
-        TlsContext context = state.getTlsContext();
-        context.setLastHandledApplicationMessageData(expectedAppDataEncodedString.getBytes());
+    }
+
+    @Before
+    public void setUp() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+        InvalidAlgorithmParameterException {
+        action = new PrintLastHandledApplicationDataAction();
+
+        WorkflowTrace trace = new WorkflowTrace();
+        trace.addTlsAction(action);
+        state = new State(trace);
+
+        ctx = state.getTlsContext();
+        ctx.setLastHandledApplicationMessageData(expectedAppDataEncodedString.getBytes());
     }
 
     @Test
-    @Override
-    public void testExecute() throws Exception {
-        super.testExecute();
-        String expectedAppDataHexString = "\n47 45 54 20 2F 74 68 65  54 65 73 74 44 61 74 61";
-        assertEquals(action.getLastHandledApplicationData(), expectedAppDataHexString);
-    }
-
-    @Test
-    public void testExecuteWithAsciiEncodingSavesAscii() throws Exception {
-        action.setStringEncoding("US-ASCII");
-        super.testExecute();
-        assertEquals(expectedAppDataEncodedString, action.getLastHandledApplicationData());
+    public void executingWithDefaultsSavesHex() throws IOException {
+        action.execute(state);
+        assertThat(expectedAppDataHexString, equalTo(action.getLastHandledApplicationData()));
         assertTrue(action.executedAsPlanned());
+        assertTrue(action.isExecuted());
     }
+
+    @Test
+    public void executingWithAsciiEncodingSavesAscii() throws IOException {
+        action.setStringEncoding("US-ASCII");
+        action.execute(state);
+        assertThat(action.getLastHandledApplicationData(), equalTo(expectedAppDataEncodedString));
+        assertTrue(action.executedAsPlanned());
+        assertTrue(action.isExecuted());
+    }
+
+    @Test
+    public void testReset() throws IOException {
+        assertFalse(action.isExecuted());
+        action.execute(state);
+        assertTrue(action.isExecuted());
+        action.reset();
+        assertFalse(action.isExecuted());
+        action.execute(state);
+        assertTrue(action.isExecuted());
+    }
+
+    @Test
+    @Category(SlowTests.class)
+    public void marshalingEmptyActionYieldsMinimalOutput() {
+        ActionTestUtils.marshalingEmptyActionYieldsMinimalOutput(SendAction.class);
+    }
+
+    @Test
+    @Category(SlowTests.class)
+    public void marshalingAndUnmarshalingEmptyObjectYieldsEqualObject() {
+        ActionTestUtils.marshalingAndUnmarshalingEmptyObjectYieldsEqualObject(SendAction.class);
+    }
+
+    @Test
+    @Category(SlowTests.class)
+    public void marshalingAndUnmarshalingFilledObjectYieldsEqualObject() {
+        action.setStringEncoding("US-ASCII");
+        ActionTestUtils.marshalingAndUnmarshalingFilledObjectYieldsEqualObject(action);
+    }
+
 }

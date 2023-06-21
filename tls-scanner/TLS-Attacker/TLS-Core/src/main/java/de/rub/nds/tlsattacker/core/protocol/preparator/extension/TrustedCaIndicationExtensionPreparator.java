@@ -1,30 +1,32 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.preparator.extension;
 
 import de.rub.nds.tlsattacker.core.constants.ExtensionByteLength;
 import de.rub.nds.tlsattacker.core.constants.TrustedCaIndicationIdentifierType;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.TrustedCaIndicationExtensionMessage;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.trustedauthority.TrustedAuthority;
+import de.rub.nds.tlsattacker.core.protocol.serializer.extension.TrustedCaIndicationExtensionSerializer;
 import de.rub.nds.tlsattacker.core.workflow.chooser.Chooser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TrustedCaIndicationExtensionPreparator
-        extends ExtensionPreparator<TrustedCaIndicationExtensionMessage> {
+public class TrustedCaIndicationExtensionPreparator extends ExtensionPreparator<TrustedCaIndicationExtensionMessage> {
 
-    private static final Logger LOGGER = LogManager.getLogger();
     private final TrustedCaIndicationExtensionMessage msg;
 
-    public TrustedCaIndicationExtensionPreparator(
-            Chooser chooser, TrustedCaIndicationExtensionMessage message) {
-        super(chooser, message);
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    public TrustedCaIndicationExtensionPreparator(Chooser chooser, TrustedCaIndicationExtensionMessage message,
+        TrustedCaIndicationExtensionSerializer serializer) {
+        super(chooser, message, serializer);
         msg = message;
     }
 
@@ -42,8 +44,7 @@ public class TrustedCaIndicationExtensionPreparator
 
     public int getLength(TrustedAuthority authority) {
         TrustedCaIndicationIdentifierType type =
-                TrustedCaIndicationIdentifierType.getIdentifierByByte(
-                        authority.getIdentifierType().getValue());
+            TrustedCaIndicationIdentifierType.getIdentifierByByte(authority.getIdentifierType().getValue());
         if (type != null) {
             switch (type) {
                 case PRE_AGREED:
@@ -52,15 +53,18 @@ public class TrustedCaIndicationExtensionPreparator
                     return ExtensionByteLength.TRUSTED_AUTHORITY_HASH;
                 case X509_NAME:
                     return (ExtensionByteLength.TRUSTED_AUTHORITY_DISTINGUISHED_NAME_LENGTH
-                            + authority.getDistinguishedNameLength().getValue());
+                        + authority.getDistinguishedNameLength().getValue());
                 case CERT_SHA1_HASH:
                     return ExtensionByteLength.TRUSTED_AUTHORITY_HASH;
                 default:
                     return 0;
+
             }
         } else {
             LOGGER.warn("Could not find type. Using 0 length instead");
             return 0;
         }
+
     }
+
 }

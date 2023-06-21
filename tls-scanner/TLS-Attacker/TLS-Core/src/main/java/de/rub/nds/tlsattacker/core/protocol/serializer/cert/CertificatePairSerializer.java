@@ -1,17 +1,19 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.serializer.cert;
 
+import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.tlsattacker.core.constants.HandshakeByteLength;
 import de.rub.nds.tlsattacker.core.constants.ProtocolVersion;
-import de.rub.nds.tlsattacker.core.layer.data.Serializer;
 import de.rub.nds.tlsattacker.core.protocol.message.cert.CertificatePair;
+import de.rub.nds.tlsattacker.core.protocol.Serializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +50,7 @@ public class CertificatePairSerializer extends Serializer<CertificatePair> {
 
     private void writeCertificate(CertificatePair pair) {
         appendBytes(pair.getCertificate().getValue());
-        LOGGER.debug("Certificate: {}", pair.getCertificate().getValue());
+        LOGGER.debug("Certificate: " + ArrayConverter.bytesToHexString(pair.getCertificate().getValue()));
     }
 
     private void writeExtensionsLength(CertificatePair pair) {
@@ -58,6 +60,7 @@ public class CertificatePairSerializer extends Serializer<CertificatePair> {
 
     private void writeExtensions(CertificatePair pair) {
         appendBytes(pair.getExtensions().getValue());
-        LOGGER.debug("Extensions: {}", pair.getExtensions().getValue());
+        LOGGER.debug("Extensions: " + ArrayConverter.bytesToHexString(pair.getExtensions().getValue()));
     }
+
 }

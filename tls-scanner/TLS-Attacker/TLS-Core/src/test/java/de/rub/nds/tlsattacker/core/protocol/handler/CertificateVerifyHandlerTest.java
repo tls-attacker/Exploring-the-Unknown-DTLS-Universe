@@ -1,30 +1,71 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.handler;
 
 import de.rub.nds.tlsattacker.core.protocol.message.CertificateVerifyMessage;
-import org.junit.jupiter.api.Test;
+import de.rub.nds.tlsattacker.core.protocol.parser.CertificateVerifyParser;
+import de.rub.nds.tlsattacker.core.protocol.preparator.CertificateVerifyPreparator;
+import de.rub.nds.tlsattacker.core.protocol.serializer.CertificateVerifySerializer;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import org.junit.After;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-public class CertificateVerifyHandlerTest
-        extends AbstractProtocolMessageHandlerTest<
-                CertificateVerifyMessage, CertificateVerifyHandler> {
+public class CertificateVerifyHandlerTest {
 
-    public CertificateVerifyHandlerTest() {
-        super(CertificateVerifyMessage::new, CertificateVerifyHandler::new);
+    private CertificateVerifyHandler handler;
+    private TlsContext context;
+
+    @Before
+    public void setUp() {
+        context = new TlsContext();
+        handler = new CertificateVerifyHandler(context);
     }
 
-    /** Test of adjustContext method, of class CertificateVerifyHandler. */
+    @After
+    public void tearDown() {
+    }
+
+    /**
+     * Test of getParser method, of class CertificateVerifyHandler.
+     */
     @Test
-    @Override
-    public void testadjustContext() {
+    public void testGetParser() {
+        assertTrue(handler.getParser(new byte[1], 0) instanceof CertificateVerifyParser);
+    }
+
+    /**
+     * Test of getPreparator method, of class CertificateVerifyHandler.
+     */
+    @Test
+    public void testGetPreparator() {
+        assertTrue(handler.getPreparator(new CertificateVerifyMessage()) instanceof CertificateVerifyPreparator);
+    }
+
+    /**
+     * Test of getSerializer method, of class CertificateVerifyHandler.
+     */
+    @Test
+    public void testGetSerializer() {
+        assertTrue(handler.getSerializer(new CertificateVerifyMessage()) instanceof CertificateVerifySerializer);
+    }
+
+    /**
+     * Test of adjustTLSContext method, of class CertificateVerifyHandler.
+     */
+    @Test
+    public void testAdjustTLSContext() {
         CertificateVerifyMessage message = new CertificateVerifyMessage();
-        handler.adjustContext(message);
+        handler.adjustTLSContext(message);
         // TODO make sure that nothing changed
     }
+
 }

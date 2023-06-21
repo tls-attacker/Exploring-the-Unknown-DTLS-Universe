@@ -1,17 +1,21 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.preparator.cert;
 
+import de.rub.nds.modifiablevariable.util.ArrayConverter;
 import de.rub.nds.tlsattacker.core.exceptions.PreparationException;
-import de.rub.nds.tlsattacker.core.layer.data.Preparator;
+import de.rub.nds.tlsattacker.core.protocol.handler.extension.ExtensionHandler;
+import de.rub.nds.tlsattacker.core.protocol.handler.factory.HandlerFactory;
 import de.rub.nds.tlsattacker.core.protocol.message.cert.CertificatePair;
 import de.rub.nds.tlsattacker.core.protocol.message.extension.ExtensionMessage;
+import de.rub.nds.tlsattacker.core.protocol.Preparator;
 import de.rub.nds.tlsattacker.core.workflow.chooser.Chooser;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,7 +48,7 @@ public class CertificatePairPreparator extends Preparator<CertificatePair> {
 
     private void prepareCertificate(CertificatePair pair) {
         pair.setCertificate(pair.getCertificateConfig());
-        LOGGER.debug("Certificate: {}", pair.getCertificate().getValue());
+        LOGGER.debug("Certificate: " + ArrayConverter.bytesToHexString(pair.getCertificate().getValue()));
     }
 
     private void prepareCertificateLength(CertificatePair pair) {
@@ -56,7 +60,9 @@ public class CertificatePairPreparator extends Preparator<CertificatePair> {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         if (pair.getExtensionsConfig() != null) {
             for (ExtensionMessage extensionMessage : pair.getExtensionsConfig()) {
-                extensionMessage.getPreparator(chooser.getContext().getTlsContext()).prepare();
+                ExtensionHandler handler = HandlerFactory.getExtensionHandler(chooser.getContext(),
+                    extensionMessage.getExtensionTypeConstant());
+                handler.getPreparator(extensionMessage).prepare();
                 try {
                     stream.write(extensionMessage.getExtensionBytes().getValue());
                 } catch (IOException ex) {
@@ -65,11 +71,12 @@ public class CertificatePairPreparator extends Preparator<CertificatePair> {
             }
             pair.setExtensions(stream.toByteArray());
         }
-        LOGGER.debug("ExtensionBytes: {}", pair.getExtensions().getValue());
+        LOGGER.debug("ExtensionBytes: " + ArrayConverter.bytesToHexString(pair.getExtensions().getValue()));
     }
 
     private void prepareExtensionLength(CertificatePair pair) {
         pair.setExtensionsLength(pair.getExtensions().getValue().length);
         LOGGER.debug("ExtensionLength: " + pair.getExtensionsLength().getValue());
     }
+
 }

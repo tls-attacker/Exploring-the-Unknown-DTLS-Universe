@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.message;
 
 import de.rub.nds.modifiablevariable.ModifiableVariableFactory;
@@ -13,24 +14,24 @@ import de.rub.nds.modifiablevariable.ModifiableVariableProperty;
 import de.rub.nds.modifiablevariable.bytearray.ModifiableByteArray;
 import de.rub.nds.modifiablevariable.integer.ModifiableInteger;
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.protocol.handler.DHClientKeyExchangeHandler;
 import de.rub.nds.tlsattacker.core.protocol.handler.PskDhClientKeyExchangeHandler;
-import de.rub.nds.tlsattacker.core.protocol.parser.PskDhClientKeyExchangeParser;
-import de.rub.nds.tlsattacker.core.protocol.preparator.PskDhClientKeyExchangePreparator;
-import de.rub.nds.tlsattacker.core.protocol.serializer.PskDhClientKeyExchangeSerializer;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import java.io.InputStream;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "PskDhClientKeyExchange")
-public class PskDhClientKeyExchangeMessage
-        extends DHClientKeyExchangeMessage<PskDhClientKeyExchangeMessage> {
+public class PskDhClientKeyExchangeMessage extends DHClientKeyExchangeMessage {
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.PUBLIC_KEY)
     private ModifiableByteArray identity;
 
     @ModifiableVariableProperty(type = ModifiableVariableProperty.Type.LENGTH)
     private ModifiableInteger identityLength;
+
+    public PskDhClientKeyExchangeMessage(Config tlsConfig) {
+        super(tlsConfig);
+    }
 
     public PskDhClientKeyExchangeMessage() {
         super();
@@ -76,39 +77,17 @@ public class PskDhClientKeyExchangeMessage
     }
 
     public void setIdentityLength(int identityLength) {
-        this.identityLength =
-                ModifiableVariableFactory.safelySetValue(this.identityLength, identityLength);
+        this.identityLength = ModifiableVariableFactory.safelySetValue(this.identityLength, identityLength);
     }
 
     @Override
-    public DHClientKeyExchangeHandler<PskDhClientKeyExchangeMessage> getHandler(
-            TlsContext tlsContext) {
-        return new PskDhClientKeyExchangeHandler(tlsContext);
-    }
-
-    @Override
-    public PskDhClientKeyExchangeParser getParser(TlsContext tlsContext, InputStream stream) {
-        return new PskDhClientKeyExchangeParser(stream, tlsContext);
-    }
-
-    @Override
-    public PskDhClientKeyExchangePreparator getPreparator(TlsContext tlsContext) {
-        return new PskDhClientKeyExchangePreparator(tlsContext.getChooser(), this);
-    }
-
-    @Override
-    public PskDhClientKeyExchangeSerializer getSerializer(TlsContext tlsContext) {
-        return new PskDhClientKeyExchangeSerializer(this);
+    public DHClientKeyExchangeHandler<PskDhClientKeyExchangeMessage> getHandler(TlsContext context) {
+        return new PskDhClientKeyExchangeHandler(context);
     }
 
     @Override
     public String toCompactString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("PSK_DH_CLIENT_KEY_EXCHANGE");
-        if (isRetransmission()) {
-            sb.append(" (ret.)");
-        }
-        return sb.toString();
+        return "PSK_DH_CLIENT_KEY_EXCHANGE";
     }
 
     @Override

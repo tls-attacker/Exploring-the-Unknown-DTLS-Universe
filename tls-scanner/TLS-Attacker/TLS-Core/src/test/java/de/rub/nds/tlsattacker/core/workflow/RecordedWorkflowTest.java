@@ -1,14 +1,13 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
-package de.rub.nds.tlsattacker.core.workflow;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+package de.rub.nds.tlsattacker.core.workflow;
 
 import de.rub.nds.modifiablevariable.util.BadRandom;
 import de.rub.nds.modifiablevariable.util.RandomHelper;
@@ -25,48 +24,52 @@ import de.rub.nds.tlsattacker.transport.recording.ClientRecordingTcpTransportHan
 import de.rub.nds.tlsattacker.util.FixedTimeProvider;
 import de.rub.nds.tlsattacker.util.TimeHelper;
 import java.io.IOException;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
+import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Random;
 import java.util.logging.Logger;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import static org.junit.Assert.*;
+import org.junit.Before;
 
 public class RecordedWorkflowTest {
 
+    private ClientRecordingTcpTransportHandler transportHandler;
+    private KeyStore ks;
     private BasicTlsServer tlsServer;
 
-    @BeforeEach
+    public RecordedWorkflowTest() {
+    }
+
+    @Before
     public void setUp() {
         RandomHelper.setRandom(new Random(0));
         TimeHelper.setProvider(new FixedTimeProvider(1000));
         try {
             KeyPair k = KeyStoreGenerator.createRSAKeyPair(1024, new BadRandom());
-            KeyStore ks = KeyStoreGenerator.createKeyStore(k, new BadRandom());
+            ks = KeyStoreGenerator.createKeyStore(k, new BadRandom());
 
             tlsServer = new BasicTlsServer(ks, KeyStoreGenerator.PASSWORD, "TLS", 4555);
-        } catch (IOException
-                | InvalidKeyException
-                | KeyManagementException
-                | KeyStoreException
-                | NoSuchAlgorithmException
-                | NoSuchProviderException
-                | SignatureException
-                | UnrecoverableKeyException
-                | CertificateException
-                | OperatorCreationException ex) {
-            Logger.getLogger(RecordedWorkflowTest.class.getName())
-                    .log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IOException | InvalidKeyException | KeyManagementException | KeyStoreException
+            | NoSuchAlgorithmException | NoSuchProviderException | SignatureException | UnrecoverableKeyException
+            | CertificateException | OperatorCreationException ex) {
+            Logger.getLogger(RecordedWorkflowTest.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         tlsServer.start();
-        while (!tlsServer.isInitialized())
-            ;
+        do {
+        } while (!tlsServer.isInitialized());
     }
 
-    @AfterEach
+    @After
     public void tearDown() {
         tlsServer.shutdown();
     }
@@ -75,22 +78,31 @@ public class RecordedWorkflowTest {
      * Test of executeWorkflow method, of class DefaultWorkflowExecutor.
      *
      * @throws java.io.IOException
+     * @throws java.security.NoSuchAlgorithmException
+     * @throws java.security.KeyManagementException
+     * @throws java.security.cert.CertificateException
+     * @throws java.security.KeyStoreException
+     * @throws java.security.UnrecoverableKeyException
+     * @throws java.security.InvalidKeyException
+     * @throws org.bouncycastle.operator.OperatorCreationException
+     * @throws java.security.NoSuchProviderException
+     * @throws java.security.SignatureException
      */
-    @Test
-    @Disabled("Not implemented")
-    public void testFullWorkflowDeterministicWorkflow() throws IOException {
+    // TODO
+    public void testFullWorkflowDeterministicWorkflow()
+        throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException,
+        UnrecoverableKeyException, KeyManagementException, KeyManagementException, InvalidKeyException,
+        NoSuchProviderException, SignatureException, OperatorCreationException, KeyManagementException {
         Config c = Config.createConfig();
         c.setDefaultSelectedCipherSuite(CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA);
         c.setDefaultClientSupportedCipherSuites(CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA);
         c.setWorkflowExecutorShouldOpen(false);
         WorkflowTrace trace =
-                new WorkflowConfigurationFactory(c)
-                        .createWorkflowTrace(WorkflowTraceType.FULL, RunningModeType.CLIENT);
-        ClientRecordingTcpTransportHandler transportHandler =
-                new ClientRecordingTcpTransportHandler(1000, 1000, "localhost", 4555);
+            new WorkflowConfigurationFactory(c).createWorkflowTrace(WorkflowTraceType.FULL, RunningModeType.CLIENT);
+        transportHandler = new ClientRecordingTcpTransportHandler(1000, 1000, "localhost", 4555);
         transportHandler.initialize();
         State state = new State(c, trace);
-        state.getTcpContext().setTransportHandler(transportHandler);
+        state.getTlsContext().setTransportHandler(transportHandler);
         WorkflowExecutor executor = new DefaultWorkflowExecutor(state);
         try {
             executor.executeWorkflow();
@@ -98,9 +110,8 @@ public class RecordedWorkflowTest {
         }
         assertTrue(state.getWorkflowTrace().executedAsPlanned());
         state = new State(c);
-        state.getTcpContext()
-                .setTransportHandler(transportHandler.getRecording().getPlayBackHandler());
-        state.getContext().getTransportHandler().initialize();
+        state.getTlsContext().setTransportHandler(transportHandler.getRecording().getPlayBackHandler());
+        state.getTlsContext().getTransportHandler().initialize();
         executor = new DefaultWorkflowExecutor(state);
         try {
             executor.executeWorkflow();
@@ -108,4 +119,5 @@ public class RecordedWorkflowTest {
         }
         assertTrue(state.getWorkflowTrace().executedAsPlanned());
     }
+
 }

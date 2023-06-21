@@ -1,55 +1,98 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.workflow.action;
 
-import static org.junit.jupiter.api.Assertions.*;
+import de.rub.nds.tlsattacker.core.config.Config;
+import de.rub.nds.tlsattacker.core.connection.OutboundConnection;
+import de.rub.nds.tlsattacker.core.state.State;
+import de.rub.nds.tlsattacker.core.state.TlsContext;
+import de.rub.nds.tlsattacker.core.workflow.WorkflowTrace;
+import org.junit.After;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-import de.rub.nds.tlsattacker.core.exceptions.ActionExecutionException;
-import org.junit.jupiter.api.Test;
+public class CopyServerRandomActionTest {
+    private State state;
+    private TlsContext tlsContextServer1;
+    private TlsContext tlsContextServer2;
+    private CopyServerRandomAction action;
 
-public class CopyServerRandomActionTest extends AbstractCopyActionTest<CopyServerRandomAction> {
+    @Before
+    public void setUp() {
 
-    public CopyServerRandomActionTest() {
-        super(new CopyServerRandomAction("src", "dst"), CopyServerRandomAction.class);
-        src.setServerRandom(new byte[] {1, 2});
-        dst.setServerRandom(new byte[] {0, 0});
+        Config config = Config.createConfig();
+        action = new CopyServerRandomAction("server1", "server2");
+        WorkflowTrace trace = new WorkflowTrace();
+        trace.addTlsAction(action);
+        trace.addConnection(new OutboundConnection("server1", 444, "localhost"));
+        trace.addConnection(new OutboundConnection("server2", 445, "localhost"));
+
+        // TLS-Contexts are created during state initialization
+        state = new State(config, trace);
+        tlsContextServer1 = state.getTlsContext("server1");
+        tlsContextServer2 = state.getTlsContext("server2");
+
+        tlsContextServer1.setServerRandom(new byte[] { 1, 2 });
+        tlsContextServer2.setServerRandom(new byte[] { 0, 0 });
     }
 
+    @After
+    public void tearDown() {
+
+    }
+
+    /**
+     * Test of execute method, of class ChangeServerRandomAction.
+     */
     @Test
-    @Override
-    public void testAliasesSetProperlyErrorSrc() {
-        CopyServerRandomAction a = new CopyServerRandomAction(null, "dst");
-        assertThrows(ActionExecutionException.class, a::assertAliasesSetProperly);
+    public void testExecute() {
+        action.execute(state);
+
+        assertArrayEquals(tlsContextServer1.getServerRandom(), tlsContextServer2.getServerRandom());
+        assertArrayEquals(tlsContextServer2.getServerRandom(), new byte[] { 1, 2 });
+        assertTrue(action.isExecuted());
     }
 
+    /**
+     * Test of getSrc/DstContextAlias methods, of class ChangeServerRandomAction.
+     */
     @Test
-    @Override
-    public void testAliasesSetProperlyErrorDst() {
-        CopyServerRandomAction a = new CopyServerRandomAction("src", null);
-        assertThrows(ActionExecutionException.class, a::assertAliasesSetProperly);
+    public void testGetAlias() {
+        assertEquals(action.getSrcContextAlias(), "server1");
+        assertEquals(action.getDstContextAlias(), "server2");
     }
 
-    /** Test of execute method, of class ChangeServerRandomAction. */
-    @Test
-    @Override
-    public void testExecute() throws Exception {
-        super.testExecute();
-        assertArrayEquals(src.getServerRandom(), dst.getServerRandom());
-        assertArrayEquals(new byte[] {1, 2}, src.getServerRandom());
-    }
-
-    /** Test of equals method, of class ChangeServerRandomAction. */
+    /**
+     * Test of equals method, of class ChangeServerRandomAction.
+     */
     @Test
     public void testEquals() {
         assertEquals(action, action);
-        assertNotEquals(action, new CopyServerRandomAction("src", "null"));
-        assertNotEquals(action, new CopyServerRandomAction("null", "dst"));
-        assertNotEquals(action, new CopyServerRandomAction("null", "null"));
+        assertNotEquals(action, new CopyClientRandomAction("server1", "null"));
+        assertNotEquals(action, new CopyClientRandomAction("null", "server2"));
+        assertNotEquals(action, new CopyClientRandomAction("null", "null"));
     }
+
+    /**
+     * Test of getAllAliases method, of class ChangeServerRandomAction.
+     */
+    @Test
+    public void testGetAllAliases() {
+        String[] aliases = action.getAllAliases().toArray(new String[2]);
+
+        assertEquals(aliases.length, 2);
+        assertTrue(aliases[0].equals("server1") || aliases[0].equals("server2"));
+        assertTrue(aliases[1].equals("server1") || aliases[1].equals("server2"));
+        assertNotEquals(aliases[0], aliases[1]);
+
+    }
+
 }

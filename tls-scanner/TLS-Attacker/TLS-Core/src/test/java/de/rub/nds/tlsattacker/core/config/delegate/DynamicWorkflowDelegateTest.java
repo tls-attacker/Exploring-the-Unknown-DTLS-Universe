@@ -1,52 +1,59 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.config.delegate;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import com.beust.jcommander.JCommander;
 import de.rub.nds.tlsattacker.core.config.Config;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
-public class DynamicWorkflowDelegateTest extends AbstractDelegateTest<DynamicWorkflowDelegate> {
+public class DynamicWorkflowDelegateTest {
 
-    @BeforeEach
+    private DynamicWorkflowDelegate delegate;
+    private JCommander jcommander;
+    private String[] args;
+
+    @Before
     public void setUp() {
-        super.setUp(new DynamicWorkflowDelegate());
+        this.delegate = new DynamicWorkflowDelegate();
+        this.jcommander = new JCommander(delegate);
     }
 
-    /** Test of isDynamicWorkflow method, of class DynamicWorkflowDelegate. */
-    @Test
-    @Disabled("Dynamic workflow not implemented")
+    /**
+     * Test of isDynamicWorkflow method, of class DynamicWorkflowDelegate.
+     */
+    @Test(expected = UnsupportedOperationException.class)
     public void testIsDynamicWorkflow() {
         args = new String[1];
         args[0] = "-dynamic_workflow";
-        assertNull(delegate.isDynamicWorkflow());
+        assertTrue(delegate.isDynamicWorkflow() == null);
         jcommander.parse(args);
         assertTrue(delegate.isDynamicWorkflow());
     }
 
-    /** Test of setDynamicWorkflow method, of class DynamicWorkflowDelegate. */
-    @Test
-    @Disabled("Dynamic workflow not implemented")
+    /**
+     * Test of setDynamicWorkflow method, of class DynamicWorkflowDelegate.
+     */
+    @Test(expected = UnsupportedOperationException.class)
     public void testSetDynamicWorkflow() {
-        assertNull(delegate.isDynamicWorkflow());
+        assertTrue(delegate.isDynamicWorkflow() == null);
         delegate.setDynamicWorkflow(true);
         assertTrue(delegate.isDynamicWorkflow());
     }
 
-    /** Test of applyDelegate method, of class DynamicWorkflowDelegate. */
-    @Test
-    @Disabled("Dynamic workflow not implemented")
+    /**
+     * Test of applyDelegate method, of class DynamicWorkflowDelegate.
+     */
+    @Test(expected = UnsupportedOperationException.class)
     public void testApplyDelegate() {
         Config config = Config.createConfig();
         config.setDynamicWorkflow(false);
@@ -57,12 +64,12 @@ public class DynamicWorkflowDelegateTest extends AbstractDelegateTest<DynamicWor
         assertTrue(config.isDynamicWorkflow());
     }
 
-    @Test
-    @Disabled("Dynamic workflow not implemented")
+    @Test(expected = UnsupportedOperationException.class)
     public void testNothingSetNothingChanges() {
         Config config = Config.createConfig();
         Config config2 = Config.createConfig();
         delegate.applyDelegate(config);
-        assertTrue(EqualsBuilder.reflectionEquals(config, config2, "keyStore", "ourCertificate"));
+        assertTrue(EqualsBuilder.reflectionEquals(config, config2, "keyStore", "ourCertificate"));// little
+        // ugly
     }
 }

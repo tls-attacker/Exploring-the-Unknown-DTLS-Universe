@@ -1,40 +1,56 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.parser;
 
+import de.rub.nds.modifiablevariable.util.ArrayConverter;
+import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.constants.HandshakeByteLength;
-import de.rub.nds.tlsattacker.core.layer.context.TlsContext;
+import de.rub.nds.tlsattacker.core.constants.HandshakeMessageType;
+import de.rub.nds.tlsattacker.core.constants.ProtocolVersion;
 import de.rub.nds.tlsattacker.core.protocol.message.PskServerKeyExchangeMessage;
-import java.io.InputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PskServerKeyExchangeParser
-        extends ServerKeyExchangeParser<PskServerKeyExchangeMessage> {
+public class PskServerKeyExchangeParser extends ServerKeyExchangeParser<PskServerKeyExchangeMessage> {
 
     private static final Logger LOGGER = LogManager.getLogger();
+
+    private final ProtocolVersion version;
 
     /**
      * Constructor for the Parser class
      *
-     * @param stream
-     * @param tlsContext
+     * @param pointer
+     *                Position in the array where the ServerKeyExchangeParser is supposed to start parsing
+     * @param array
+     *                The byte[] which the ServerKeyExchangeParser is supposed to parse
+     * @param version
+     *                Version of the Protocol
+     * @param config
+     *                A Config used in the current context
      */
-    public PskServerKeyExchangeParser(InputStream stream, TlsContext tlsContext) {
-        super(stream, tlsContext);
+    public PskServerKeyExchangeParser(int pointer, byte[] array, ProtocolVersion version, Config config) {
+        super(pointer, array, HandshakeMessageType.SERVER_KEY_EXCHANGE, version, config);
+        this.version = version;
     }
 
     @Override
-    public void parse(PskServerKeyExchangeMessage msg) {
+    protected void parseHandshakeMessageContent(PskServerKeyExchangeMessage msg) {
         LOGGER.debug("Parsing PSKECDHEServerKeyExchangeMessage");
         parsePskIdentityHintLength(msg);
         parsePskIdentityHint(msg);
+    }
+
+    @Override
+    protected PskServerKeyExchangeMessage createHandshakeMessage() {
+        return new PskServerKeyExchangeMessage();
     }
 
     private void parsePskIdentityHintLength(PskServerKeyExchangeMessage msg) {
@@ -45,10 +61,11 @@ public class PskServerKeyExchangeParser
     /**
      * Reads the next bytes as the PSKIdentityHint and writes them in the message
      *
-     * @param msg Message to write in
+     * @param msg
+     *            Message to write in
      */
     private void parsePskIdentityHint(PskServerKeyExchangeMessage msg) {
         msg.setIdentityHint(parseByteArrayField(msg.getIdentityHintLength().getValue()));
-        LOGGER.debug("SerializedPSK-Identity: {}", msg.getIdentityHint().getValue());
+        LOGGER.debug("SerializedPSK-Identity: " + ArrayConverter.bytesToHexString(msg.getIdentityHint().getValue()));
     }
 }

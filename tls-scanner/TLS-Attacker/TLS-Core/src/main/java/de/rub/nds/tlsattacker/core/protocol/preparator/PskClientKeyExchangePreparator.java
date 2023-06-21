@@ -1,11 +1,12 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.protocol.preparator;
 
 import de.rub.nds.modifiablevariable.util.ArrayConverter;
@@ -17,8 +18,7 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PskClientKeyExchangePreparator
-        extends ClientKeyExchangePreparator<PskClientKeyExchangeMessage> {
+public class PskClientKeyExchangePreparator extends ClientKeyExchangePreparator<PskClientKeyExchangeMessage> {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -45,18 +45,12 @@ public class PskClientKeyExchangePreparator
     public byte[] generatePremasterSecret() {
         outputStream = new ByteArrayOutputStream();
         try {
+            outputStream.write(ArrayConverter.intToBytes(chooser.getConfig().getDefaultPSKKey().length,
+                HandshakeByteLength.PSK_LENGTH));
             outputStream.write(
-                    ArrayConverter.intToBytes(
-                            chooser.getConfig().getDefaultPSKKey().length,
-                            HandshakeByteLength.PSK_LENGTH));
-            outputStream.write(
-                    ArrayConverter.intToBytes(
-                            HandshakeByteLength.PSK_ZERO,
-                            chooser.getConfig().getDefaultPSKKey().length));
-            outputStream.write(
-                    ArrayConverter.intToBytes(
-                            chooser.getConfig().getDefaultPSKKey().length,
-                            HandshakeByteLength.PSK_LENGTH));
+                ArrayConverter.intToBytes(HandshakeByteLength.PSK_ZERO, chooser.getConfig().getDefaultPSKKey().length));
+            outputStream.write(ArrayConverter.intToBytes(chooser.getConfig().getDefaultPSKKey().length,
+                HandshakeByteLength.PSK_LENGTH));
             outputStream.write(chooser.getConfig().getDefaultPSKKey());
         } catch (IOException ex) {
             LOGGER.warn("Encountered exception while writing to ByteArrayOutputStream.");
@@ -68,15 +62,15 @@ public class PskClientKeyExchangePreparator
 
     private void preparePremasterSecret(PskClientKeyExchangeMessage msg) {
         msg.getComputations().setPremasterSecret(premasterSecret);
-        LOGGER.debug("PremasterSecret: {}", msg.getComputations().getPremasterSecret().getValue());
+        LOGGER.debug("PremasterSecret: "
+            + ArrayConverter.bytesToHexString(msg.getComputations().getPremasterSecret().getValue()));
     }
 
     private void prepareClientServerRandom(PskClientKeyExchangeMessage msg) {
-        clientRandom =
-                ArrayConverter.concatenate(chooser.getClientRandom(), chooser.getServerRandom());
+        clientRandom = ArrayConverter.concatenate(chooser.getClientRandom(), chooser.getServerRandom());
         msg.getComputations().setClientServerRandom(clientRandom);
-        LOGGER.debug(
-                "ClientServerRandom: {}", msg.getComputations().getClientServerRandom().getValue());
+        LOGGER.debug("ClientServerRandom: "
+            + ArrayConverter.bytesToHexString(msg.getComputations().getClientServerRandom().getValue()));
     }
 
     @Override

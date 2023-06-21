@@ -1,15 +1,15 @@
-/*
+/**
  * TLS-Attacker - A Modular Penetration Testing Framework for TLS
  *
- * Copyright 2014-2023 Ruhr University Bochum, Paderborn University, Technology Innovation Institute, and Hackmanit GmbH
+ * Copyright 2014-2022 Ruhr University Bochum, Paderborn University, Hackmanit GmbH
  *
  * Licensed under Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0.txt
  */
+
 package de.rub.nds.tlsattacker.core.config.delegate;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import de.rub.nds.tlsattacker.core.config.Config;
 import de.rub.nds.tlsattacker.core.connection.AliasedConnection;
@@ -17,21 +17,45 @@ import de.rub.nds.tlsattacker.core.connection.InboundConnection;
 import de.rub.nds.tlsattacker.core.connection.OutboundConnection;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
+import org.hamcrest.Matcher;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
+public class MitmDelegateTest {
 
-    @BeforeEach
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    private MitmDelegate delegate;
+    private JCommander jcommander;
+    private String[] args;
+    String expectedClientConStr;
+    String expectedServerConStr;
+    Config config;
+    InboundConnection dummyServerCon;
+    OutboundConnection dummyClientCon;
+    InboundConnection expectedServerCon;
+    OutboundConnection expectedClientCon;
+
+    @Before
     public void setUp() {
-        super.setUp(new MitmDelegate());
+        this.delegate = new MitmDelegate();
+        this.jcommander = new JCommander(delegate);
+        this.config = Config.createConfig();
     }
 
     @Test
     public void testParseValidParameters() {
-        String expectedServerConStr = "1234";
-        String expectedClientConStr = "localhost:1234";
+        expectedServerConStr = "1234";
+        expectedClientConStr = "localhost:1234";
         args = new String[4];
         args[0] = "-accept";
         args[1] = expectedServerConStr;
@@ -44,17 +68,17 @@ public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
 
         String actualInConStr = delegate.getInboundConnectionStr();
         assertNotNull(actualInConStr);
-        assertEquals(expectedServerConStr, actualInConStr);
+        assertThat(actualInConStr, equalTo(expectedServerConStr));
 
         String actualOutConStr = delegate.getOutboundConnectionStr();
         assertNotNull(actualOutConStr);
-        assertEquals(expectedClientConStr, actualOutConStr);
+        assertThat(actualOutConStr, equalTo(expectedClientConStr));
     }
 
     @Test
     public void testParseValidParametersWithAlias() {
-        String expectedServerConStr = "someAlias:1234";
-        String expectedClientConStr = "anotherAlias:localhost:1234";
+        expectedServerConStr = "someAlias:1234";
+        expectedClientConStr = "anotherAlias:localhost:1234";
         args = new String[4];
         args[0] = "-accept";
         args[1] = expectedServerConStr;
@@ -67,21 +91,19 @@ public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
 
         String actualInConStr = delegate.getInboundConnectionStr();
         assertNotNull(actualInConStr);
-        assertEquals(expectedServerConStr, actualInConStr);
+        assertThat(actualInConStr, equalTo(expectedServerConStr));
 
         String actualOutConStr = delegate.getOutboundConnectionStr();
         assertNotNull(actualOutConStr);
-        assertEquals(expectedClientConStr, actualOutConStr);
+        assertThat(actualOutConStr, equalTo(expectedClientConStr));
     }
 
     @Test
     public void testApplyDelegate() {
-        Config config = Config.createConfig();
-        config.setDefaultClientConnection(null);
-        config.setDefaultServerConnection(null);
-        InboundConnection expectedServerCon = new InboundConnection("accept:1234", 1234);
-        OutboundConnection expectedClientCon =
-                new OutboundConnection("remotehost:4321", 4321, "remotehost");
+        config.setDefaultClientConnection(dummyClientCon);
+        config.setDefaultServerConnection(dummyServerCon);
+        expectedServerCon = new InboundConnection("accept:1234", 1234);
+        expectedClientCon = new OutboundConnection("remotehost:4321", 4321, "remotehost");
         args = new String[4];
         args[0] = "-accept";
         args[1] = "1234";
@@ -93,14 +115,16 @@ public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
 
         InboundConnection actualServerCon = config.getDefaultServerConnection();
         OutboundConnection actualClientCon = config.getDefaultClientConnection();
-        assertEquals(expectedServerCon, actualServerCon);
-        assertEquals(expectedClientCon, actualClientCon);
+        assertThat(actualServerCon, equalTo(expectedServerCon));
+        assertThat(actualClientCon, equalTo(expectedClientCon));
     }
 
-    /** Make sure that applying with port = null fails properly. */
+    /**
+     * Make sure that applying with port = null fails properly.
+     */
     @Test
     public void testApplyDelegateInvalidPorts() {
-        Config config = Config.createConfig();
+        Matcher expectedExMsg = startsWith("port must be in interval [0,65535], but is");
         String validPort = "aliasOrHost:8420";
         List<String> invalidPorts = new ArrayList<>();
         invalidPorts.add("badPort:0");
@@ -109,21 +133,15 @@ public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
         for (String badPort : invalidPorts) {
             delegate.setInboundConnectionStr(badPort);
             delegate.setOutboundConnectionStr(validPort);
-            ParameterException exception =
-                    assertThrows(ParameterException.class, () -> delegate.applyDelegate(config));
-            assertTrue(
-                    exception
-                            .getMessage()
-                            .startsWith("port must be in interval [1,65535], but is"));
+            exception.expect(ParameterException.class);
+            exception.expectMessage(expectedExMsg);
+            delegate.applyDelegate(config);
 
             delegate.setInboundConnectionStr(validPort);
             delegate.setOutboundConnectionStr(badPort);
-            exception =
-                    assertThrows(ParameterException.class, () -> delegate.applyDelegate(config));
-            assertTrue(
-                    exception
-                            .getMessage()
-                            .startsWith("port must be in interval [1,65535], but is"));
+            exception.expect(ParameterException.class);
+            exception.expectMessage(expectedExMsg);
+            delegate.applyDelegate(config);
         }
     }
 
@@ -134,7 +152,8 @@ public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
         config.setDefaultClientConnection(null);
         String expectedHostOrAlias = "aliasOrHost";
         String expectedPort = "8420";
-        String param = expectedHostOrAlias + ':' + expectedPort;
+        StringBuilder sb = new StringBuilder();
+        String param = sb.append(expectedHostOrAlias).append(':').append(expectedPort).toString();
 
         delegate.setInboundConnectionStr(param);
         delegate.setOutboundConnectionStr(param);
@@ -145,15 +164,17 @@ public class MitmDelegateTest extends AbstractDelegateTest<MitmDelegate> {
         assertNotNull(actualServerCon);
         assertNotNull(actualClientCon);
 
-        assertEquals(expectedHostOrAlias, actualServerCon.getAlias());
-        assertEquals(Integer.parseInt(expectedPort), actualServerCon.getPort().intValue());
-        assertNull(actualServerCon.getHostname());
-        assertEquals(param, actualClientCon.getAlias());
-        assertEquals(Integer.parseInt(expectedPort), actualClientCon.getPort().intValue());
-        assertEquals(expectedHostOrAlias, actualClientCon.getHostname());
+        assertThat(actualServerCon.getAlias(), equalTo(expectedHostOrAlias));
+        assertThat(actualServerCon.getPort(), equalTo(Integer.parseInt(expectedPort)));
+        assertThat(actualServerCon.getHostname(), equalTo(null));
+        assertThat(actualClientCon.getAlias(), equalTo(param));
+        assertThat(actualClientCon.getPort(), equalTo(Integer.parseInt(expectedPort)));
+        assertThat(actualClientCon.getHostname(), equalTo(expectedHostOrAlias));
     }
 
     @Test
-    @Disabled("Not implemented")
-    public void testApplyDelegateWithMissingConnection() {}
+    @Ignore("Implement me!")
+    public void testApplyDelegateWithMissingConnection() {
+
+    }
 }
