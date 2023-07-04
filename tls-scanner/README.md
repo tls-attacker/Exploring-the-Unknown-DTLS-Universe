@@ -13,3 +13,11 @@ In order to run TLS-Scanner, you need to run the jar file in the apps/ folder.
 ```bash
 java -jar apps/TLS-Server-Scanner.jar -connect [ip]:[port] -dtls
 ```
+
+### Docker
+---
+Instead of building the TLS-Scanner yourself and starting it from the commandline, you can use the provided Dockerfile.
+```bash
+docker build --tag tls-scanner --file dockerfile-tls-scanner .
+docker run --rm --network="host" --name tls-scanner tls-scanner -connect [ip]:[port] -dtls
+```
