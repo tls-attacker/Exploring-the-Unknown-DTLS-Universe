@@ -11,7 +11,7 @@ To launch a server, you can use the following commands:
 
 - OpenSSL
 ```bash
-docker run --rm -v [absolute path to certs/]:/certs/ --network="host" --name openssl-dtls-server openssl-dtls-server -key /certs/private_key.pem -cert /certs/certificate.pem -accept 4433 -dtls
+docker run --rm -v [absolute path to libraries/certs/]:/certs/ --network="host" --name openssl-dtls-server openssl-dtls-server -key /certs/private_key.pem -cert /certs/certificate.pem -accept 4433 -dtls
 ```
 
 - Mbed TLS
